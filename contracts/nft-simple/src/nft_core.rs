@@ -311,6 +311,7 @@ impl NonFungibleTokenCore for Contract {
                 royalty: token.royalty,
                 approved_account_ids: token.approved_account_ids,
                 token_type: token.token_type,
+                package: token.package,
             })
         } else {
             None

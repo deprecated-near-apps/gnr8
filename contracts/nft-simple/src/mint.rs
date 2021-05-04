@@ -9,7 +9,8 @@ impl Contract {
         metadata: TokenMetadata,
         perpetual_royalties: Option<HashMap<AccountId, u32>>,
         receiver_id: Option<ValidAccountId>,
-        token_type: Option<TokenType>,
+        package: Option<PackageType>,
+        token_type: Option<PackageType>,
     ) {
 
         let mut final_token_id = format!("{}", self.token_metadata_by_id.len() + 1);
@@ -56,6 +57,7 @@ impl Contract {
             approved_account_ids: Default::default(),
             next_approval_id: 0,
             royalty,
+            package,
             token_type,
         };
         assert!(
