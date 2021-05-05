@@ -10,9 +10,9 @@ pub struct Token {
     pub next_approval_id: u64,
     
     // CUSTOM - fields
+    pub series_args: SeriesArgs,
+
     pub royalty: HashMap<AccountId, u32>,
-    pub package: Option<PackageType>,
-    pub token_type: Option<TokenType>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -20,11 +20,9 @@ pub struct Token {
 pub struct JsonToken {
     pub token_id: TokenId,
     pub owner_id: AccountId,
-    pub metadata: TokenMetadata,
     pub approved_account_ids: HashMap<AccountId, U64>,
 
     // CUSTOM - fields
+    pub series_args: SeriesArgs,
     pub royalty: HashMap<AccountId, u32>,
-    pub package: Option<PackageType>,
-    pub token_type: Option<TokenType>,
 }

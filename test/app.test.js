@@ -1,10 +1,13 @@
 const fs = require('fs');
 const fetch = require('node-fetch');
 const BN = require('bn.js');
-const nearAPI = require('near-api-js');
 const { sha256 } = require('js-sha256');
+const nearAPI = require('near-api-js');
 const testUtils = require('./test-utils');
 const getConfig = require('../src/config');
+
+const {getPackages} = require('./examples/packages');
+const {reglExample} = require('./examples/regl-example');
 
 const { 
 	Contract, KeyPair, Account,
@@ -21,31 +24,20 @@ const {
 	networkId, GAS, GUESTS_ACCOUNT_SECRET
 } = getConfig();
 
+const PACKAGE_NAME_VERSION_DELIMETER = '@';
+
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
 describe('deploy contract ' + contractName, () => {
-
-	const DELIMETER = '||';
 	let alice, aliceId, bob, bobId,
 		stableAccount, marketAccount,
 		storageMinimum, storageMarket;
 
-	const metadata = {
-		media: 'https://media1.tenor.com/images/4c1d96a989150e7019bfbabbebd2ff36/tenor.gif?itemid=20269144',
-		issued_at: Date.now().toString()
-	};
-	const metadata2 = {
-		media: 'https://media1.tenor.com/images/818161c07948bac34aa7c5f5712ec3d7/tenor.gif?itemid=15065455',
-		issued_at: Date.now().toString()
-	};
-	const now = Date.now();
-	const tokenTypes = [
-		`typeA:${now}`,
-		`typeB:${now}`,
-		`typeC:${now}`
-	];
-	const tokenIds = tokenTypes.map((type, i) => `${type}:${i}`);
-	const contract_royalty = 500;
+	const t = Date.now()
+	const arg1 = t
+	const arg2 = t + '1'
+
+	const metadata = {}
 
 	/// contractAccount.accountId is the NFT contract and contractAccount is the owner
 	/// see initContract in ./test-utils.js for details
@@ -71,14 +63,6 @@ describe('deploy contract ' + contractName, () => {
 		// console.log('\n\n Bob accountId:', bobId, '\n\n');
 
 		// await contractAccount.functionCall(contractName, 'set_contract_royalty', { contract_royalty }, GAS);
-		
-		// // examples
-		// const supply_cap_by_type = {
-		// 	[tokenTypes[0]]: '1',
-		// 	[tokenTypes[1]]: '500',
-		// 	[tokenTypes[2]]: '1000000',
-		// }
-		// await contractAccount.functionCall(contractId, 'add_token_types', { supply_cap_by_type }, GAS);
 		
 		// /// create or get stableAccount and deploy ft.wasm (if not already deployed)
 		// stableAccount = await createOrInitAccount(stableId, GUESTS_ACCOUNT_SECRET);
@@ -165,58 +149,71 @@ describe('deploy contract ' + contractName, () => {
 	});
 
 	test('contract owner adds packages', async () => {
-		const threeUrls = [
-			'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-		]
-		const three = {
-			name: 'three.js',
-			version: 'r128',
-			src_hash: sha256(await fetch(threeUrls[0]).then(r => r.text())),
-			urls: threeUrls
-		}
+		const { three, regl } = await getPackages();
 		await contractAccount.functionCall(contractId, 'add_package', three, GAS, parseNearAmount('1'));
 		/// add mirrors
-		delete three.src_hash
-		three.urls = ['https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js']
-		await contractAccount.functionCall(contractId, 'add_mirrors', three, GAS, parseNearAmount('1'));
-
-		const reglUrls = [
-			'https://cdnjs.cloudflare.com/ajax/libs/regl/2.1.0/regl.min.js',
-		]
-		const regl = {
-			name: 'regl',
-			version: '2.1.0',
-			src_hash: sha256(await fetch(reglUrls[0]).then(r => r.text())),
-			urls: reglUrls
-		}
+		// delete three.src_hash
+		// three.urls = ['https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js']
+		// await contractAccount.functionCall(contractId, 'add_mirrors', three, GAS, parseNearAmount('1'));
 		await contractAccount.functionCall(contractId, 'add_package', regl, GAS, parseNearAmount('1'));
-
-		const getThree = await contractAccount.viewFunction(contractId, 'get_package', { name_version: three.name + '@' + three.version });
-		console.log(getThree)
-		const getRegl = await contractAccount.viewFunction(contractId, 'get_package', { name_version: regl.name + '@' + regl.version });
-		console.log(getRegl)
+		const getThree = await contractAccount.viewFunction(contractId, 'get_package', { name_version: three.name_version });
+		expect(getThree.src_hash).toEqual(three.src_hash)
+		const getRegl = await contractAccount.viewFunction(contractId, 'get_package', { name_version: regl.name_version });
+		expect(getRegl.src_hash).toEqual(regl.src_hash)
 	});
 
+	test('contract owner creates series', async () => {
+		await contractAccount.functionCall(contractId, 'create_series', reglExample, GAS, parseNearAmount('0.9'));
+		const series = await contractAccount.viewFunction(contractId, 'get_series', { name: reglExample.name });
+		expect(series.src).toEqual(reglExample.src)
+	});
 
-
-	test('NFT contract owner mints nft', async () => {
-		const token_id = tokenIds[0];
-		// await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS, storageMarket);
-
-		const media = await fetch('https://npmcdn.com/regl/dist/regl.min.js').then(r => r.text())
-		console.log(media.length)
-
+	test('contract owner mints NFT in series', async () => {
+		const token_id = sha256(reglExample.name + '[1, 1, 1, 1]' + '0.1' + arg1).toString('hex')
+		console.log(token_id)
 		await contractAccount.functionCall(contractId, 'nft_mint', {
-			token_id,
-			metadata: {
-				media
-			},
-			token_type: tokenTypes[0],
-		}, GAS, parseNearAmount('0.9'));
+			series_args: {
+				name: reglExample.name,
+				mint: [
+					'[1, 1, 1, 1]'
+				],
+				owner: [
+					'0.1' + arg1
+				]
+			}
+		}, GAS, parseNearAmount('1'));
 
 		const token = await contractAccount.viewFunction(contractId, 'nft_token', { token_id });
-		console.log(token.metadata.media.length)
+		expect(token.series_args.mint[0]).toEqual('[1, 1, 1, 1]')
+
+		const series = await contractAccount.viewFunction(contractId, 'get_series', { name: token.series_args.name });
+
+		let {src} = series
+		series.params.mint.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.mint[i]))
+		series.params.owner.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.owner[i]))
+		console.log(src)
 	});
+
+	test('contract owner tries to mint nft with duplicate args', async () => {
+		try {
+			await contractAccount.functionCall(contractId, 'nft_mint', {
+				series_args: {
+					name: reglExample.name,
+					mint: [
+						'[1, 1, 1, 1]'
+					],
+					owner: [
+						'0.1' + arg1
+					]
+				}
+			}, GAS, parseNearAmount('1'));
+			expect(false)
+		} catch (e) {
+			console.warn(e)
+			expect(true)
+		}
+	});
+
 
 	// test('NFT contract owner mints nft and approves a sale for a fixed amount of NEAR', async () => {
 	// 	const token_id = tokenIds[0];

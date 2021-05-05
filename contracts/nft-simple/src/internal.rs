@@ -123,11 +123,6 @@ impl Contract {
     ) -> Token {
         let token = self.tokens_by_id.get(token_id).expect("Token not found");
 
-        // CUSTOM - token_type can be locked until unlocked by owner
-        if token.token_type.is_some() {
-            assert_eq!(self.token_types_locked.contains(&token.token_type.clone().unwrap()), false, "Token transfers are locked");
-        }
-
         if sender_id != &token.owner_id && !token.approved_account_ids.contains_key(sender_id) {
             env::panic(b"Unauthorized");
         }
@@ -165,8 +160,7 @@ impl Contract {
             approved_account_ids: Default::default(),
             next_approval_id: token.next_approval_id,
             royalty: token.royalty.clone(),
-            token_type: token.token_type.clone(),
-            package: token.package.clone(),
+            series_args: token.series_args.clone(),
         };
         self.tokens_by_id.insert(token_id, &new_token);
 

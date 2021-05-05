@@ -1,15 +1,12 @@
 use crate::*;
 
 static PACKAGE_NAME_VERSION_DELIMETER: &str = "@";
-
-pub type PackageType = String;
+pub type PackageNameVersion = String;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Package {
-    pub name: String,
-    pub version: String,
     pub src_hash: String,
     pub urls: Vec<String>,
 }
@@ -20,19 +17,19 @@ impl Contract {
     #[payable]
     pub fn add_package(
         &mut self,
-        name: String,
-        version: String,
+        name_version: PackageNameVersion,
         src_hash: String,
         urls: Vec<String>,
     ) {
         assert_at_least_one_yocto();
+        assert!(name_version.contains(PACKAGE_NAME_VERSION_DELIMETER), "Package name_version must be <package>@<version>");
+        let mut name_version_split = name_version.split(PACKAGE_NAME_VERSION_DELIMETER);
+        assert!(!name_version_split.next().unwrap().is_empty(), "Must specify a package name");
+        assert!(!name_version_split.next().unwrap().is_empty(), "Must specify a package version");
 
         let initial_storage_usage = env::storage_usage();
-        let name_version = format!("{}{}{}", name, PACKAGE_NAME_VERSION_DELIMETER, version);
     
         self.packages_by_name_version.insert(&name_version, &Package {
-            name,
-            version,
             src_hash,
             urls,
         });
@@ -45,15 +42,13 @@ impl Contract {
     #[payable]
     pub fn add_mirrors(
         &mut self,
-        name: String,
-        version: String,
+        name_version: PackageNameVersion,
         urls: Vec<String>,
     ) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
-        let name_version = format!("{}{}{}", name, PACKAGE_NAME_VERSION_DELIMETER, version);
     
-        let mut package = self.packages_by_name_version.get(&name_version).expect(&format!("No package {}", name_version));
+        let mut package = self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version));
         package.urls.extend(urls);
 
         let used_storage = env::storage_usage() - initial_storage_usage;
@@ -65,12 +60,12 @@ impl Contract {
 
     pub fn get_package(
         &self,
-        name_version: String,
+        name_version: PackageNameVersion,
     ) -> Package {
-        self.packages_by_name_version.get(&name_version).expect(&format!("No package {}", name_version))
+        self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version))
     }
 
-    pub fn get_packages(
+    pub fn get_package_range(
         &self,
         from_index: U64,
         limit: U64,

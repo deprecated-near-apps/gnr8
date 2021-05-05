@@ -14,16 +14,22 @@ pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
 pub use crate::token::*;
+
+// CUSTOM
 pub use crate::enumerable::*;
 pub use crate::package::*;
+pub use crate::series::*;
 
 mod internal;
 mod metadata;
 mod mint;
 mod nft_core;
 mod token;
+
+// CUSTOM
 mod enumerable;
 mod package;
+mod series;
 
 // CUSTOM types and const
 
@@ -39,9 +45,7 @@ near_sdk::setup_alloc!();
 pub struct Contract {
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
 
-    pub tokens_by_id: LookupMap<TokenId, Token>,
-
-    pub token_metadata_by_id: UnorderedMap<TokenId, TokenMetadata>,
+    pub tokens_by_id: UnorderedMap<TokenId, Token>,
 
     pub owner_id: AccountId,
 
@@ -50,15 +54,13 @@ pub struct Contract {
 
     pub metadata: LazyOption<NFTMetadata>,
 
-    /// CUSTOM fields
-    pub packages_by_name_version: UnorderedMap<PackageType, Package>,
-    pub tokens_per_package_name_version: LookupMap<PackageType, UnorderedSet<TokenId>>,
+    /// CUSTOM
+    pub series_by_name: UnorderedMap<SeriesName, Series>,
+    pub tokens_per_series: LookupMap<SeriesName, UnorderedSet<TokenId>>,
 
+    pub packages_by_name_version: UnorderedMap<PackageNameVersion, Package>,
+    pub tokens_per_package: LookupMap<PackageNameVersion, UnorderedSet<TokenId>>,
 
-
-    pub tokens_per_type: LookupMap<TokenType, UnorderedSet<TokenId>>,
-    pub supply_cap_by_type: TypeSupplyCaps,
-    pub token_types_locked: UnorderedSet<TokenType>,
     pub contract_royalty: u32,
 }
 
@@ -68,26 +70,24 @@ pub enum StorageKey {
     TokensPerOwner,
     TokenPerOwnerInner { account_id_hash: CryptoHash },
     TokensById,
-    TokenMetadataById,
     NftMetadata,
     // CUSTOM
+    SeriesByName,
+    TokensPerSeries,
+    TokenPerSeriesInner { series_name_hash: CryptoHash },
     PackagesByNameVersion,
-    TokensPerPackageNameVersion,
-
-    TokensPerType,
-    TokenTypesLocked,
+    TokensPerPackage,
+    TokenPerPackageInner { package_name_version_hash: CryptoHash },
 }
 
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(owner_id: ValidAccountId, metadata: NFTMetadata, supply_cap_by_type: TypeSupplyCaps) -> Self {
+    pub fn new(owner_id: ValidAccountId, metadata: NFTMetadata) -> Self {
         let mut this = Self {
             tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
-            tokens_by_id: LookupMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
-            token_metadata_by_id: UnorderedMap::new(
-                StorageKey::TokenMetadataById.try_to_vec().unwrap(),
-            ),
+            tokens_by_id: UnorderedMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
+           
             owner_id: owner_id.into(),
             extra_storage_in_bytes_per_token: 0,
             metadata: LazyOption::new(
@@ -95,21 +95,14 @@ impl Contract {
                 Some(&metadata),
             ),
 
-             
+            series_by_name: UnorderedMap::new(StorageKey::SeriesByName.try_to_vec().unwrap()),
+            tokens_per_series: LookupMap::new(StorageKey::TokensPerSeries.try_to_vec().unwrap()),
+
             packages_by_name_version: UnorderedMap::new(StorageKey::PackagesByNameVersion.try_to_vec().unwrap()),
-            tokens_per_package_name_version: LookupMap::new(StorageKey::TokensPerPackageNameVersion.try_to_vec().unwrap()),
+            tokens_per_package: LookupMap::new(StorageKey::TokensPerPackage.try_to_vec().unwrap()),
 
-
-            tokens_per_type: LookupMap::new(StorageKey::TokensPerType.try_to_vec().unwrap()),
-            supply_cap_by_type,
-            token_types_locked: UnorderedSet::new(StorageKey::TokenTypesLocked.try_to_vec().unwrap()),
             contract_royalty: 0,
         };
-
-        // CUSTOM - tokens are locked by default
-        for (token_type, _) in &this.supply_cap_by_type {
-            this.token_types_locked.insert(&token_type);
-        }
 
         this.measure_min_token_storage_cost();
 
@@ -145,38 +138,9 @@ impl Contract {
         self.contract_royalty = contract_royalty;
     }
 
-    pub fn add_token_types(&mut self, supply_cap_by_type: TypeSupplyCaps) {
-        self.assert_owner();
-        for (token_type, hard_cap) in &supply_cap_by_type {
-            self.token_types_locked.insert(&token_type);
-            self.supply_cap_by_type.insert(token_type.to_string(), *hard_cap);
-        }
-    }
-
-    pub fn unlock_token_types(&mut self, token_types: Vec<String>) {
-        for token_type in &token_types {
-            self.token_types_locked.remove(&token_type);
-        }
-    }
-
     /// CUSTOM - views
 
     pub fn get_contract_royalty(&self) -> u32 {
         self.contract_royalty
-    }
-
-    pub fn get_supply_caps(&self) -> TypeSupplyCaps {
-        self.supply_cap_by_type.clone()
-    }
-
-    pub fn get_token_types_locked(&self) -> Vec<String> {
-        self.token_types_locked.to_vec()
-    }
-
-    pub fn is_token_locked(&self, token_id: TokenId) -> bool {
-        let token = self.tokens_by_id.get(&token_id).expect("No token");
-        assert_eq!(token.token_type.is_some(), true, "Token must have type");
-        let token_type = token.token_type.unwrap();
-        self.token_types_locked.contains(&token_type)
     }
 }

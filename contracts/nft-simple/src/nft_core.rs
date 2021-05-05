@@ -247,19 +247,11 @@ impl NonFungibleTokenCore for Contract {
         refund_deposit(storage_used);
 
         if let Some(msg) = msg {
-            
-            // CUSTOM - add token_type to msg
-            let mut final_msg = msg;
-            let token_type = token.token_type;
-            if let Some(token_type) = token_type {
-                final_msg.insert_str(final_msg.len() - 1, &format!(",\"token_type\":\"{}\"", token_type));
-            }
-
             ext_non_fungible_approval_receiver::nft_on_approve(
                 token_id,
                 token.owner_id,
                 approval_id,
-                final_msg,
+                msg,
                 &account_id,
                 NO_DEPOSIT,
                 env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
@@ -298,20 +290,17 @@ impl NonFungibleTokenCore for Contract {
     }
 
     fn nft_total_supply(&self) -> U64 {
-        self.token_metadata_by_id.len().into()
+        self.tokens_by_id.len().into()
     }
 
     fn nft_token(&self, token_id: TokenId) -> Option<JsonToken> {
         if let Some(token) = self.tokens_by_id.get(&token_id) {
-            let metadata = self.token_metadata_by_id.get(&token_id).unwrap();
             Some(JsonToken {
                 token_id,
                 owner_id: token.owner_id,
-                metadata,
-                royalty: token.royalty,
                 approved_account_ids: token.approved_account_ids,
-                token_type: token.token_type,
-                package: token.package,
+                series_args: token.series_args,
+                royalty: token.royalty,
             })
         } else {
             None
