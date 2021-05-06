@@ -26,7 +26,25 @@ const {
 
 const PACKAGE_NAME_VERSION_DELIMETER = '@';
 
+/// contractAccount.accountId is the NFT contract and contractAccount is the owner
+/// see initContract in ./test-utils.js for details
+const contractId = contractAccount.accountId;
+console.log('\n\n contractId:', contractId, '\n\n');
+/// the fungible token "stablecoin" contract
+const stableId = 'stable.' + contractId;
+/// the market contract
+const marketId = 'market.' + contractId;
+
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
+
+const getTokenAndSrc = async (token_id) => {
+	const token = await contractAccount.viewFunction(contractId, 'nft_token', { token_id });
+	const series = await contractAccount.viewFunction(contractId, 'get_series', { name: token.series_args.name });
+	let { src } = series
+	series.params.mint.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.mint[i]))
+	series.params.owner.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.owner[i]))
+	return { token, src }
+}
 
 describe('deploy contract ' + contractName, () => {
 	let alice, aliceId, bob, bobId,
@@ -36,17 +54,38 @@ describe('deploy contract ' + contractName, () => {
 	const t = Date.now()
 	const arg1 = t
 	const arg2 = t + '1'
+	reglExample.name = reglExample.name + t
+	const owner = [
+		'0.01'
+	]
+	const args1 = {
+		series_args: {
+			name: reglExample.name,
+			mint: [
+				'[1, 1, 1, 0.' + arg1 + ']'
+			],
+			owner,
+		}
+	}
+	const args2 = {
+		series_args: {
+			name: reglExample.name,
+			mint: [
+				'[1, 1, 1, 0.' + arg2 + ']'
+			],
+			owner,
+		}
+	}
 
-	const metadata = {}
+	// token_ids in Rust will be base64 hashes of series name + user minting args (unique)
+	const hash = sha256.create();
+	const tokenIds = [
+		reglExample.name + args1.series_args.mint.join('')
+	].map((src) => {
+		return Buffer.from(hash.update(src).array()).toString('base64')
+	})
 
-	/// contractAccount.accountId is the NFT contract and contractAccount is the owner
-	/// see initContract in ./test-utils.js for details
-	const contractId = contractAccount.accountId;
-	console.log('\n\n contractId:', contractId, '\n\n');
-	/// the fungible token "stablecoin" contract
-	const stableId = 'stable.' + contractId;
-	/// the market contract
-	const marketId = 'market.' + contractId;
+	console.log('\n\n Token 1: \n', tokenIds[0], '\n', reglExample.name + args1.series_args.mint.join(''));
 
 	/// most of the following code in beforeAll can be used for deploying and initializing contracts
 	/// skip all tests if you want to deploy to production or testnet without any NFTs
@@ -169,49 +208,44 @@ describe('deploy contract ' + contractName, () => {
 	});
 
 	test('contract owner mints NFT in series', async () => {
-		const token_id = sha256(reglExample.name + '[1, 1, 1, 1]' + '0.1' + arg1).toString('hex')
-		console.log(token_id)
-		await contractAccount.functionCall(contractId, 'nft_mint', {
-			series_args: {
-				name: reglExample.name,
-				mint: [
-					'[1, 1, 1, 1]'
-				],
-				owner: [
-					'0.1' + arg1
-				]
-			}
-		}, GAS, parseNearAmount('1'));
-
-		const token = await contractAccount.viewFunction(contractId, 'nft_token', { token_id });
-		expect(token.series_args.mint[0]).toEqual('[1, 1, 1, 1]')
-
-		const series = await contractAccount.viewFunction(contractId, 'get_series', { name: token.series_args.name });
-
-		let {src} = series
-		series.params.mint.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.mint[i]))
-		series.params.owner.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.owner[i]))
-		console.log(src)
+		const token_id = tokenIds[0]
+		await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, parseNearAmount('1'));
+		const { token } = await getTokenAndSrc(token_id)
+		expect(token.series_args.mint[0]).toEqual(args1.series_args.mint[0])
 	});
 
 	test('contract owner tries to mint nft with duplicate args', async () => {
 		try {
-			await contractAccount.functionCall(contractId, 'nft_mint', {
-				series_args: {
-					name: reglExample.name,
-					mint: [
-						'[1, 1, 1, 1]'
-					],
-					owner: [
-						'0.1' + arg1
-					]
-				}
-			}, GAS, parseNearAmount('1'));
+			await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, parseNearAmount('1'));
 			expect(false)
 		} catch (e) {
-			console.warn(e)
-			expect(true)
+			expect(/using those args already exists/gi.test(e.toString()))
 		}
+	});
+
+	test('contract owner tries to mint more than supply', async () => {
+		/// works cause supply 2 and using arg2
+		await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
+		try {
+			/// fails because of supply
+			await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
+			expect(false)
+		} catch (e) {
+			expect(/Cannot mint anymore/gi.test(e.toString()))
+		}
+	});
+
+	test('contract owner can update their owner args', async () => {
+		const token_id = tokenIds[0]
+		await contractAccount.functionCall(contractId, 'update_token_owner_args', {
+			token_id,
+			owner_args: {
+				angleSpeed: '0.1'
+			}
+		}, GAS, parseNearAmount('1'));
+		const { token, src } = await getTokenAndSrc(token_id)
+		expect(token.series_args.owner[0]).toEqual('0.1')
+		console.log(src.substr(0, 512))
 	});
 
 

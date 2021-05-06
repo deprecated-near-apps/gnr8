@@ -3,7 +3,7 @@ const { packages } = require('./packages');
 exports.reglExample = {
     name: 'regl-example-1',
     params: {
-        supply_limit: '2',
+        supply_limit: '1',
         mint: [
             'backgroundColor'
         ],
@@ -19,8 +19,14 @@ exports.reglExample = {
 
     // minting parameter - choose the background color
     const color = {{backgroundColor = [0, 0, 0, 1]}}
+
+    /// filter param and enforce specific value, but won't enforce unique tokens
+
+
     // owner parameter - angle speed of triangles
-    const angleSpeed = {{angleSpeed = 0.01}}
+    const angleSpeed = {{angleSpeed = 0.01, recommended=[0, 0.1, 0.01] }}
+
+
     
     /// normal regl example
 

@@ -1,8 +1,8 @@
-const contractName = 'dev-1620190578625-4074258';
+const contractName = 'dev-1620272307837-5485857';
 
 module.exports = function getConfig() {
 	let config = {
-		networkId: 'default',
+		networkId: 'testnet',
 		nodeUrl: 'https://rpc.testnet.near.org',
 		// walletUrl: 'http://localhost:1234',
 		walletUrl: 'https://wallet.testnet.near.org',

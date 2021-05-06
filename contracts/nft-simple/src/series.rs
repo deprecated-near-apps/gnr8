@@ -1,6 +1,7 @@
 use crate::*;
 
 pub type SeriesName = String;
+pub type OwnerArgs = HashMap<String, String>;
 
 #[derive(Clone)]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -41,7 +42,6 @@ impl Contract {
         params: SeriesParams,
     ) {
         assert_at_least_one_yocto();
-
         let initial_storage_usage = env::storage_usage();
     
         self.series_by_name.insert(&name, &Series {
@@ -49,10 +49,39 @@ impl Contract {
             params,
         });
 
-        let used_storage = env::storage_usage() - initial_storage_usage;
-        let required_storage_in_bytes = used_storage;
+        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
         refund_deposit(required_storage_in_bytes);
     }
+
+    /// token specific methods because they are part of this series
+
+    #[payable]
+    pub fn update_token_owner_args(
+        &mut self,
+        token_id: TokenId,
+        owner_args: OwnerArgs,
+    ) {
+        assert_at_least_one_yocto();
+        let initial_storage_usage = env::storage_usage();
+    
+        let mut token = self.tokens_by_id.get(&token_id).unwrap_or_else(|| panic!("No token {}", token_id));
+        let series = self.series_by_name.get(&token.series_args.name).unwrap_or_else(|| panic!("No series {}", token.series_args.name));
+
+        for (name, value) in &owner_args {
+            let index = series.params.owner.iter().position(|v| v == name);
+            if index.is_none() {
+                log!("Skipping: {}. This is not a parameter of series: {}", name, token.series_args.name);
+                continue;
+            }
+            token.series_args.owner[index.unwrap()] = value.clone();
+            self.tokens_by_id.insert(&token_id, &token);
+        }
+
+        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
+        refund_deposit(required_storage_in_bytes);
+    }
+
+    
 
     /// views
 

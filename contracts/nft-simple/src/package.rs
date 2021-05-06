@@ -34,8 +34,7 @@ impl Contract {
             urls,
         });
 
-        let used_storage = env::storage_usage() - initial_storage_usage;
-        let required_storage_in_bytes = used_storage;
+        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
         refund_deposit(required_storage_in_bytes);
     }
 
@@ -51,8 +50,7 @@ impl Contract {
         let mut package = self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version));
         package.urls.extend(urls);
 
-        let used_storage = env::storage_usage() - initial_storage_usage;
-        let required_storage_in_bytes = used_storage;
+        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
         refund_deposit(required_storage_in_bytes);
     }
 

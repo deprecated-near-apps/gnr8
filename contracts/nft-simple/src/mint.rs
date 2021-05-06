@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{log};
+use near_sdk::{base64::{encode}};
 
 #[near_bindgen]
 impl Contract {
@@ -10,11 +10,12 @@ impl Contract {
         perpetual_royalties: Option<HashMap<AccountId, u32>>,
         receiver_id: Option<ValidAccountId>,
     ) {
-        // CUSTOM - token_id is hash of all series args, enforcing uniqueness of minted works
-        let token_id = format!("{:02x?}", env::sha256(
-            format!("{}{}{}", series_args.name, series_args.mint.join(""), series_args.owner.join("")).as_bytes()
-        )).replace(", ", "").replace("0x", "").replace("[", "").replace("]", "");
+        // CUSTOM - token_id is hash of all series args, enforcing uniqueness
+        let token_id = encode(env::sha256(
+            format!("{}{}", series_args.name, series_args.mint.join("")).as_bytes()
+        ));
 
+        log!("Series Args: {}{}", series_args.name, series_args.mint.join(""));
         log!("Minting: {}", token_id);
 
         let initial_storage_usage = env::storage_usage();
