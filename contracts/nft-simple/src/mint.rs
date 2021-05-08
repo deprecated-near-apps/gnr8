@@ -41,7 +41,7 @@ impl Contract {
         // CUSTOM - enforce series supply limit and store tokens per series
         let series_name = series_args.name.clone();
         let series = self.series_by_name.get(&series_name).unwrap_or_else(|| panic!("No series {}", series_name));
-        let supply_limit = series.params.supply_limit;
+        let max_supply = series.params.max_supply;
         let mut tokens_per_series = self.tokens_per_series
             .get(&series_name)
             .unwrap_or_else(|| {
@@ -53,7 +53,7 @@ impl Contract {
                     .unwrap(),
                 )
             });
-        assert!(tokens_per_series.len() < u64::from(supply_limit), "Cannot mint anymore of {}", series_name);
+        assert!(tokens_per_series.len() < u64::from(max_supply), "Cannot mint anymore of {}", series_name);
         tokens_per_series.insert(&token_id);
         self.tokens_per_series.insert(&series_name, &tokens_per_series);
 

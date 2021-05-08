@@ -17,7 +17,7 @@ pub struct SeriesArgs {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct SeriesParams {
-    pub supply_limit: U64,
+    pub max_supply: U64,
     pub mint: Vec<String>,
     pub owner: Vec<String>,
     pub packages: Vec<String>,
