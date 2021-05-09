@@ -18,13 +18,13 @@ const {
 export const Menu = ({ app, menuKey, update, options }) => {
 	return <div className={app[menuKey]}>
 		<div className="close" onClick={() => {
-			update('app.' + menuKey, false)
+			update('app.' + menuKey, false);
 		}}>✕</div>
 		{
 			Object.entries(options).map(([k, v]) => 
 				<div key={k} className="item" onClick={() => {
-					v()
-					update('app.' + menuKey, false)
+					v();
+					update('app.' + menuKey, false);
 				}}>{k}</div>	
 			)
 		}

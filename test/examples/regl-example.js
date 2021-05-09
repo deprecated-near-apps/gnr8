@@ -1,20 +1,20 @@
 const { packages } = require('./packages');
 
 exports.reglExample = {
-    name: 'regl-example-1',
-    params: {
-        max_supply: '2',
-        mint: [
-            'backgroundColor'
-        ],
-        owner: [
-            'angleSpeed'
-        ],
-        packages: [
-            packages[1]
-        ]
-    },
-    src: `@params
+	name: 'regl-example-1',
+	params: {
+		max_supply: '2',
+		mint: [
+			'backgroundColor'
+		],
+		owner: [
+			'angleSpeed'
+		],
+		packages: [
+			packages[1]
+		]
+	},
+	src: `@params
 {
     packages: ['regl@2.1.0'],
     max_supply: '2',
@@ -106,4 +106,4 @@ regl.frame(function () {
         { offset: [1, 1] }
     ])
 })`,
-}
+};

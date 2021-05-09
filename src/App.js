@@ -22,17 +22,17 @@ const App = () => {
 		dispatch(onAppMount());
 	};
 	useEffect(onMount, []);
-	const [href, setHref] = useState(window.location.href)
+	const [href, setHref] = useState(window.location.href);
 	useHistory(() => {
-		setHref(window.location.href)
+		setHref(window.location.href);
 	}, true);
-	const { path, args } = pathAndArgs()
-	console.log(path, args, path === '/')
+	const { path, args } = pathAndArgs();
+	console.log(path, args, path === '/');
 
 	const toggleMainMenu = (which) => {
-		update('app.menu', menu === which ? false : which)
-		update('app.createMenu', false)
-	}
+		update('app.menu', menu === which ? false : which);
+		update('app.createMenu', false);
+	};
 
 	return <>
 		{ loading && <div className="loading">

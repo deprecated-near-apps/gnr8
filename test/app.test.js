@@ -40,24 +40,24 @@ jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 const getTokenAndSrc = async (token_id) => {
 	const token = await contractAccount.viewFunction(contractId, 'nft_token', { token_id });
 	const series = await contractAccount.viewFunction(contractId, 'get_series', { name: token.series_args.name });
-	let { src } = series
-	series.params.mint.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.mint[i]))
-	series.params.owner.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.owner[i]))
-	return { token, src }
-}
+	let { src } = series;
+	series.params.mint.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.mint[i]));
+	series.params.owner.forEach((p, i) => src = src.replace(new RegExp(`{{${p}.*}}`, 'g'), token.series_args.owner[i]));
+	return { token, src };
+};
 
 describe('deploy contract ' + contractName, () => {
 	let alice, aliceId, bob, bobId,
 		stableAccount, marketAccount,
 		storageMinimum, storageMarket;
 
-	const t = Date.now()
-	const arg1 = t
-	const arg2 = t + '1'
-	reglExample.name = reglExample.name + t
+	const t = Date.now();
+	const arg1 = t;
+	const arg2 = t + '1';
+	reglExample.name = reglExample.name + t;
 	const owner = [
 		'0.01'
-	]
+	];
 	const args1 = {
 		series_args: {
 			name: reglExample.name,
@@ -66,7 +66,7 @@ describe('deploy contract ' + contractName, () => {
 			],
 			owner,
 		}
-	}
+	};
 	const args2 = {
 		series_args: {
 			name: reglExample.name,
@@ -75,15 +75,15 @@ describe('deploy contract ' + contractName, () => {
 			],
 			owner,
 		}
-	}
+	};
 
 	// token_ids in Rust will be base64 hashes of series name + user minting args (unique)
 	const hash = sha256.create();
 	const tokenIds = [
 		reglExample.name + args1.series_args.mint.join('')
 	].map((src) => {
-		return Buffer.from(hash.update(src).array()).toString('base64')
-	})
+		return Buffer.from(hash.update(src).array()).toString('base64');
+	});
 
 	console.log('\n\n Token 1: \n', tokenIds[0], '\n', reglExample.name + args1.series_args.mint.join(''));
 
@@ -196,30 +196,30 @@ describe('deploy contract ' + contractName, () => {
 		// await contractAccount.functionCall(contractId, 'add_mirrors', three, GAS, parseNearAmount('1'));
 		await contractAccount.functionCall(contractId, 'add_package', regl, GAS, parseNearAmount('1'));
 		const getThree = await contractAccount.viewFunction(contractId, 'get_package', { name_version: three.name_version });
-		expect(getThree.src_hash).toEqual(three.src_hash)
+		expect(getThree.src_hash).toEqual(three.src_hash);
 		const getRegl = await contractAccount.viewFunction(contractId, 'get_package', { name_version: regl.name_version });
-		expect(getRegl.src_hash).toEqual(regl.src_hash)
+		expect(getRegl.src_hash).toEqual(regl.src_hash);
 	});
 
 	test('contract owner creates series', async () => {
 		await contractAccount.functionCall(contractId, 'create_series', reglExample, GAS, parseNearAmount('0.9'));
 		const series = await contractAccount.viewFunction(contractId, 'get_series', { name: reglExample.name });
-		expect(series.src).toEqual(reglExample.src)
+		expect(series.src).toEqual(reglExample.src);
 	});
 
 	test('contract owner mints NFT in series', async () => {
-		const token_id = tokenIds[0]
+		const token_id = tokenIds[0];
 		await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, parseNearAmount('1'));
-		const { token } = await getTokenAndSrc(token_id)
-		expect(token.series_args.mint[0]).toEqual(args1.series_args.mint[0])
+		const { token } = await getTokenAndSrc(token_id);
+		expect(token.series_args.mint[0]).toEqual(args1.series_args.mint[0]);
 	});
 
 	test('contract owner tries to mint nft with duplicate args', async () => {
 		try {
 			await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, parseNearAmount('1'));
-			expect(false)
+			expect(false);
 		} catch (e) {
-			expect(/using those args already exists/gi.test(e.toString()))
+			expect(/using those args already exists/gi.test(e.toString()));
 		}
 	});
 
@@ -229,23 +229,23 @@ describe('deploy contract ' + contractName, () => {
 		try {
 			/// fails because of supply
 			await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
-			expect(false)
+			expect(false);
 		} catch (e) {
-			expect(/Cannot mint anymore/gi.test(e.toString()))
+			expect(/Cannot mint anymore/gi.test(e.toString()));
 		}
 	});
 
 	test('contract owner can update their owner args', async () => {
-		const token_id = tokenIds[0]
+		const token_id = tokenIds[0];
 		await contractAccount.functionCall(contractId, 'update_token_owner_args', {
 			token_id,
 			owner_args: {
 				angleSpeed: '0.1'
 			}
 		}, GAS, parseNearAmount('1'));
-		const { token, src } = await getTokenAndSrc(token_id)
-		expect(token.series_args.owner[0]).toEqual('0.1')
-		console.log(src.substr(0, 512))
+		const { token, src } = await getTokenAndSrc(token_id);
+		expect(token.series_args.owner[0]).toEqual('0.1');
+		console.log(src.substr(0, 512));
 	});
 
 
