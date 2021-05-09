@@ -41,6 +41,11 @@ body {
         line-height: 1rem;
         display: flex;
         justify-content: space-between;
+        > div {
+            white-space: nowrap;
+            overflow-x: hidden;
+            max-width: 50%;
+        }
     }
     .sub {
         z-index: 10000;
