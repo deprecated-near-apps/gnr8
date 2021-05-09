@@ -41,10 +41,22 @@ body {
         line-height: 1rem;
         display: flex;
         justify-content: space-between;
-        > div {
+        > div:nth-child(1) {
             white-space: nowrap;
-            overflow-x: hidden;
             max-width: 50%;
+            &:after {
+                content: '';
+                position: absolute;
+                top:0;
+                left: 50vw;
+                background: linear-gradient(to right, transparent, black 25%);
+                z-index: 1;
+                width: 100%;
+                height: 2rem;
+            }
+        }
+        > div:nth-child(2) {
+            z-index: 2;
         }
     }
     .sub {
@@ -68,11 +80,12 @@ body {
             top: 0;
             left: 50%;
             text-align: center;
+            padding-top: 0.18rem;
             margin-left: -1rem;
             width: 2rem;
             height: 2rem;
             line-height: 2rem;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.75);
             display: inline-block;
             cursor: pointer;
         }
