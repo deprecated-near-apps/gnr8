@@ -2,7 +2,7 @@ use crate::*;
 use near_sdk::json_types::{ValidAccountId, U64};
 use near_sdk::{ext_contract, log, Gas, PromiseResult};
 
-const GAS_FOR_NFT_APPROVE: Gas = 10_000_000_000_000;
+const GAS_FOR_NFT_APPROVE: Gas = 15_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
 const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;
 const NO_DEPOSIT: Balance = 0;
@@ -36,6 +36,8 @@ pub trait NonFungibleTokenCore {
     ) -> Promise;
 
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>);
+
+    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>);
 
     fn nft_revoke(&mut self, token_id: TokenId, account_id: ValidAccountId);
 
@@ -257,6 +259,54 @@ impl NonFungibleTokenCore for Contract {
                 env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
             )
             .as_return(); // Returning this promise
+        }
+    }
+
+    #[payable]
+    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>) {
+        assert_at_least_one_yocto();
+        
+        let account_id: AccountId = account_id.into();
+
+        for token_id in token_ids {
+            let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
+
+            assert_eq!(
+                &env::predecessor_account_id(),
+                &token.owner_id,
+                "Predecessor must be the token owner."
+            );
+    
+            let approval_id: U64 = token.next_approval_id.into();
+            let is_new_approval = token
+                .approved_account_ids
+                .insert(account_id.clone(), approval_id)
+                .is_none();
+    
+            let storage_used = if is_new_approval {
+                bytes_for_approved_account_id(&account_id)
+            } else {
+                0
+            };
+    
+            token.next_approval_id += 1;
+            self.tokens_by_id.insert(&token_id, &token);
+    
+            refund_deposit(storage_used);
+    
+            if let Some(msg) = msg.clone() {
+                ext_non_fungible_approval_receiver::nft_on_approve(
+                    token_id,
+                    token.owner_id,
+                    approval_id,
+                    msg,
+                    &account_id,
+                    NO_DEPOSIT,
+                    // env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
+                    GAS_FOR_NFT_APPROVE,
+                )
+                .as_return(); // Returning this promise
+            }
         }
     }
 

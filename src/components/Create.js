@@ -3,7 +3,7 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/theme-github";
 import JSON5 from 'json5';
-import { contractId } from '../state/near';
+import { GAS, contractId, parseNearAmount } from '../state/near';
 import { loadCode } from '../state/iframe';
 import { Menu } from './Menu';
 import { reglExample } from '../../test/examples/regl-example';
@@ -14,7 +14,9 @@ export const Create = ({ app, update, account, contractAccount }) => {
 	const [code, setCode] = useState(reglExample.src);
 
 	useEffect(() => {
-		onChange(reglExample.src, true);
+		if (contractAccount) {
+			onChange(reglExample.src, true);
+		}
 	}, [contractAccount]);
 
 	const getParams = (code) => {
@@ -67,10 +69,11 @@ export const Create = ({ app, update, account, contractAccount }) => {
 									params: {
 										max_supply: params.max_supply,
 										mint: Object.keys(params.mint),
-										owner: Object.keys(params.owner)
+										owner: Object.keys(params.owner),
+										packages: params.packages,
 									},
 									src,
-								});
+								}, GAS, parseNearAmount('0.1'));
 								console.log(result);
 							},
 						}

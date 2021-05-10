@@ -35,6 +35,8 @@ const stableId = 'stable.' + contractId;
 /// the market contract
 const marketId = 'market.' + contractId;
 
+const seriesPremintPrepend = '||';
+
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
 const getTokenAndSrc = async (token_id) => {
@@ -76,14 +78,35 @@ describe('deploy contract ' + contractName, () => {
 			owner,
 		}
 	};
+	const argsBatch = {
+		series_name: reglExample.name,
+		limit: '18',
+	};
 
 	// token_ids in Rust will be base64 hashes of series name + user minting args (unique)
-	const hash = sha256.create();
-	const tokenIds = [
-		reglExample.name + args1.series_args.mint.join('')
-	].map((src) => {
-		return Buffer.from(hash.update(src).array()).toString('base64');
+	const tokenIds = ([
+		reglExample.name + args1.series_args.mint.join(''),
+		reglExample.name + args2.series_args.mint.join(''),
+	].concat(([2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19])
+		.map((id) => reglExample.name + id))
+	).map((src, i) => {
+		const hash = sha256.create();
+		return (i > 1 ? seriesPremintPrepend : '') + Buffer.from(hash.update(src).array()).toString('base64');
 	});
+
+	console.log(tokenIds)
+
+	// batch
+	const numBatch = 8
+	const argsBatchApprove = {
+		token_ids: tokenIds.slice(2, numBatch + 2),
+		account_id: marketId,
+		msg: JSON.stringify({
+			sale_conditions: [
+				{ ft_token_id: "near", price: parseNearAmount('1')}
+			]
+		})
+	};
 
 	console.log('\n\n Token 1: \n', tokenIds[0], '\n', reglExample.name + args1.series_args.mint.join(''));
 
@@ -142,49 +165,49 @@ describe('deploy contract ' + contractName, () => {
 		// 	console.log('\n\n storageMinimum:', storageMinimum, '\n\n');
 		// }
 
-		// /** 
-		//  * Deploy the Market Contract and connect it to the NFT contract (contractId)
-		//  * and the FT contract (stable.[contractId])
-		//  */ 
+		/** 
+		 * Deploy the Market Contract and connect it to the NFT contract (contractId)
+		 * and the FT contract (stable.[contractId])
+		 */ 
 
-		// /// default option for markets, init with all FTs you want it to support
-		// const ft_token_ids = [stableId]
+		/// default option for markets, init with all FTs you want it to support
+		const ft_token_ids = [stableId]
 		
-		// /// create or get market account and deploy market.wasm (if not already deployed)
-		// marketAccount = await createOrInitAccount(marketId, GUESTS_ACCOUNT_SECRET);
-		// const marketAccountState = await marketAccount.state();
-		// console.log('\n\nstate:', marketAccountState, '\n\n');
-		// if (marketAccountState.code_hash === '11111111111111111111111111111111') {
+		/// create or get market account and deploy market.wasm (if not already deployed)
+		marketAccount = await createOrInitAccount(marketId, GUESTS_ACCOUNT_SECRET);
+		const marketAccountState = await marketAccount.state();
+		console.log('\n\nstate:', marketAccountState, '\n\n');
+		if (marketAccountState.code_hash === '11111111111111111111111111111111') {
 
-		// 	const marketContractBytes = fs.readFileSync('./out/market.wasm');
-		// 	console.log('\n\n deploying marketAccount contractBytes:', marketContractBytes.length, '\n\n');
-		// 	const newMarketArgs = {
-		// 		owner_id: contractId,
-		// 		ft_token_ids
-		// 	};
-		// 	const actions = [
-		// 		deployContract(marketContractBytes),
-		// 		functionCall('new', newMarketArgs, GAS)
-		// 	];
-		// 	await marketAccount.signAndSendTransaction(marketId, actions);
+			const marketContractBytes = fs.readFileSync('./out/market.wasm');
+			console.log('\n\n deploying marketAccount contractBytes:', marketContractBytes.length, '\n\n');
+			const newMarketArgs = {
+				owner_id: contractId,
+				ft_token_ids
+			};
+			const actions = [
+				deployContract(marketContractBytes),
+				functionCall('new', newMarketArgs, GAS)
+			];
+			await marketAccount.signAndSendTransaction(marketId, actions);
 
-		// 	/// NOTE market must register for all ft_token_ids it wishes to use (e.g. use this loop for standard fts)
-		// 	ft_token_ids.forEach(async (ft_token_id) => {
-		// 		const deposit = await marketAccount.viewFunction(ft_token_id, 'storage_minimum_balance');
-		// 		await marketAccount.functionCall(ft_token_id, 'storage_deposit', {}, GAS, deposit);
-		// 	})
-		// }
-		// // get all supported tokens as array
-		// const supportedTokens = await marketAccount.viewFunction(marketId, "supported_ft_token_ids");
-		// console.log('\n\n market supports these fungible tokens:', supportedTokens, '\n\n');
+			/// NOTE market must register for all ft_token_ids it wishes to use (e.g. use this loop for standard fts)
+			ft_token_ids.forEach(async (ft_token_id) => {
+				const deposit = await marketAccount.viewFunction(ft_token_id, 'storage_minimum_balance');
+				await marketAccount.functionCall(ft_token_id, 'storage_deposit', {}, GAS, deposit);
+			})
+		}
+		// get all supported tokens as array
+		const supportedTokens = await marketAccount.viewFunction(marketId, "supported_ft_token_ids");
+		console.log('\n\n market supports these fungible tokens:', supportedTokens, '\n\n');
 
-		// // should be [false], just testing api
-		// const added = await contractAccount.functionCall(marketId, "add_ft_token_ids", { ft_token_ids }, GAS);
-		// console.log('\n\n added these tokens', supportedTokens, added, '\n\n');
+		// should be [false], just testing api
+		const added = await contractAccount.functionCall(marketId, "add_ft_token_ids", { ft_token_ids }, GAS);
+		console.log('\n\n added these tokens', supportedTokens, added, '\n\n');
 
-		// /// find out how much needed for market storage
-		// storageMarket = await contractAccount.viewFunction(marketId, 'storage_amount');
-		// console.log('\n\n storageMarket:', storageMarket, '\n\n');
+		/// find out how much needed for market storage
+		storageMarket = await contractAccount.viewFunction(marketId, 'storage_amount');
+		console.log('\n\n storageMarket:', storageMarket, '\n\n');
 	});
 
 	test('contract owner adds packages', async () => {
@@ -223,18 +246,6 @@ describe('deploy contract ' + contractName, () => {
 		}
 	});
 
-	test('contract owner tries to mint more than supply', async () => {
-		/// works cause supply 2 and using arg2
-		await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
-		try {
-			/// fails because of supply
-			await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
-			expect(false);
-		} catch (e) {
-			expect(/Cannot mint anymore/gi.test(e.toString()));
-		}
-	});
-
 	test('contract owner can update their owner args', async () => {
 		const token_id = tokenIds[0];
 		await contractAccount.functionCall(contractId, 'update_token_owner_args', {
@@ -245,7 +256,38 @@ describe('deploy contract ' + contractName, () => {
 		}, GAS, parseNearAmount('1'));
 		const { token, src } = await getTokenAndSrc(token_id);
 		expect(token.series_args.owner[0]).toEqual('0.1');
-		console.log(src.substr(0, 512));
+	});
+
+	test('contract owner (series owner) mints a batch of tokens', async () => {
+		/// works cause supply 2 and using arg2
+		await contractAccount.functionCall(contractId, 'nft_mint_batch', argsBatch, GAS, parseNearAmount('1'));
+		const { token, src } = await getTokenAndSrc(tokenIds[2]);
+		console.log(token)
+		expect(token.series_args.owner.length).toEqual(0);
+	});
+
+	test('contract owner approves batch of tokens for sale on market', async () => {
+		await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS,
+			new BN(storageMarket).mul(new BN(numBatch)).toString()
+		);
+		await contractAccount.functionCall(contractId, 'nft_approve_batch', argsBatchApprove, GAS, parseNearAmount('1'));
+		const sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_contract_id', {
+			nft_contract_id: contractId,
+			from_index: '0',
+			limit: '100'
+		});
+		console.log(sales)
+		expect(sales.length).toEqual(numBatch);
+	});
+
+	test('contract owner tries to mint more than supply', async () => {
+		try {
+			/// fails because of max_supply
+			await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
+			expect(false);
+		} catch (e) {
+			expect(/Cannot mint anymore/gi.test(e.toString()));
+		}
 	});
 
 

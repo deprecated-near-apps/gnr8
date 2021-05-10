@@ -35,10 +35,10 @@ body {
 .menu {
     font-family: 'Libre Barcode 39 Text', cursive;
     font-size: 2rem;
+    line-height: 2rem;
     padding: 0 $margin;
     position: relative;
     .bar {
-        line-height: 1rem;
         display: flex;
         justify-content: space-between;
         > div:nth-child(1) {

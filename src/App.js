@@ -45,7 +45,7 @@ const App = () => {
 				{wallet && <>
 					{wallet.signedIn ?
 						<div onClick={() => toggleMainMenu('left')}>
-							{account.accountId.replace('.' + networkId, 'oaijpweioufhawpeiufhawpoeifjawpoeifhaepiughpawoeifjdapwoeifjpwoef')}
+							{account.accountId.replace('.' + networkId, '')}
 						</div> :
 						<div onClick={() => wallet.signIn()}>WALLET</div>}
 				</>}

@@ -28,6 +28,7 @@ pub struct SeriesParams {
 #[serde(crate = "near_sdk::serde")]
 pub struct Series {
     pub src: String,
+    pub owner_id: AccountId,
     pub params: SeriesParams,
 }
 
@@ -46,6 +47,7 @@ impl Contract {
     
         self.series_by_name.insert(&name, &Series {
             src,
+            owner_id: env::predecessor_account_id(),
             params,
         });
 

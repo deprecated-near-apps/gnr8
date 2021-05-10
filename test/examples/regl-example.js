@@ -3,7 +3,7 @@ const { packages } = require('./packages');
 exports.reglExample = {
 	name: 'regl-example-1',
 	params: {
-		max_supply: '2',
+		max_supply: '20',
 		mint: [
 			'backgroundColor'
 		],
