@@ -4,6 +4,7 @@ exports.reglExample = {
 	name: 'regl-example-1',
 	params: {
 		max_supply: '20',
+        enforce_unique_args: true,
 		mint: [
 			'backgroundColor'
 		],

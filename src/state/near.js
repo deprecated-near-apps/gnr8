@@ -10,7 +10,7 @@ export const {
 	contractName: contractId,
 } = getConfig();
 
-const marketId = 'market.' + contractId;
+export const marketId = 'market.' + contractId;
 
 export const {
 	utils: {
@@ -22,6 +22,8 @@ export const {
 
 export const initNear = () => async ({ update, getState, dispatch }) => {
 	const { near, wallet, contractAccount } = await getWallet();
+
+	window.near = near
 
 	wallet.signIn = () => {
 		wallet.requestSignIn(contractId, 'Blah Blah');

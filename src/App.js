@@ -1,13 +1,17 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect } from 'react';
 
 import { appStore, onAppMount } from './state/app';
 import { networkId } from './state/near';
 import { useHistory, pathAndArgs } from './utils/history';
 
 import { Menu } from './components/Menu';
-import { Gallery } from './components/Gallery';
-import { Create } from './components/Create';
+
+import { Market } from './components/Market';
+import { Collection } from './components/Collection';
+import { Series } from './components/Series';
 import { Mint } from './components/Mint';
+import { Token } from './components/Token';
+import { Create } from './components/Create';
 
 import NearLogo from 'url:./img/near_icon.svg';
 
@@ -15,24 +19,25 @@ import './App.scss';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
-
-	const { app, app: { menu }, near, wallet, contractAccount, account, loading } = state;
+	const { app, app: { menu }, views, wallet, contractAccount, account, loading } = state;
 
 	const onMount = () => {
 		dispatch(onAppMount());
 	};
 	useEffect(onMount, []);
-	const [href, setHref] = useState(window.location.href);
 	useHistory(() => {
-		setHref(window.location.href);
+		toggleMainMenu(false);
+		update('app.href', window.location.href);
 	}, true);
 	const { path, args } = pathAndArgs();
-	console.log(path, args, path === '/');
 
 	const toggleMainMenu = (which) => {
 		update('app.menu', menu === which ? false : which);
 		update('app.createMenu', false);
+		update('app.mintMenu', false);
 	};
+
+	if (!contractAccount) return null
 
 	return <>
 		{ loading && <div className="loading">
@@ -44,8 +49,10 @@ const App = () => {
 			<div className="bar">
 				{wallet && <>
 					{wallet.signedIn ?
-						<div onClick={() => toggleMainMenu('left')}>
-							{account.accountId.replace('.' + networkId, '')}
+						<div>
+							<span onClick={() => toggleMainMenu('left')}>
+								{account.accountId.replace('.' + networkId, '')}
+							</span>
 						</div> :
 						<div onClick={() => wallet.signIn()}>WALLET</div>}
 				</>}
@@ -61,9 +68,10 @@ const App = () => {
 					}} />}
 					{menu === 'right' && <Menu {...{
 						app, menuKey: 'menu', update, options: {
-							'Gallery ᐊ': () => history.push('/'),
+							'Market ᐊ': () => history.push('/'),
+							'Series ᐊ': () => history.push('/series'),
+							'Collection ᐊ': () => history.push('/collection'),
 							'Create ᐊ': () => history.push('/create'),
-							'Mint ᐊ': () => history.push('/mint'),
 						}
 					}} />}
 				</div>
@@ -72,9 +80,12 @@ const App = () => {
 		</div>
 
 		<section>
-			{ path === '/' && <Gallery /> }
-			{ path === '/create' && <Create {...{ app, update, account, contractAccount }} /> }
-			{ path === '/mint' && <Mint /> }
+			{ path === '/' && <Market {...{ dispatch, views }} /> }
+			{ path === '/series' && <Series {...{ dispatch, views, args }} /> }
+			{ path === '/collection' && <Collection {...{ dispatch, views, account }} /> }
+			{ path === '/create' && <Create {...{ app, update, dispatch, account }} /> }
+			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
+			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }
 		</section>
 
 	</>;

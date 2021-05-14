@@ -11,8 +11,8 @@ pub struct Token {
     
     // CUSTOM - fields
     pub series_args: SeriesArgs,
-
     pub royalty: HashMap<AccountId, u32>,
+    pub issued_at: U64,
 }
 
 #[derive(Serialize, Deserialize)]

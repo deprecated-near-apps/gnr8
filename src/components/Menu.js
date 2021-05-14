@@ -15,7 +15,11 @@ const {
 		} }
 } = nearAPI;
 
-export const Menu = ({ app, menuKey, update, options }) => {
+export const Menu = ({ app, menuKey, update, options = {} }) => {
+	if (!Object.keys(options).length) {
+		setTimeout(() => update('app.' + menuKey, false), 1)
+		return null 
+	}
 	return <div className={app[menuKey]}>
 		<div className="close" onClick={() => {
 			update('app.' + menuKey, false);

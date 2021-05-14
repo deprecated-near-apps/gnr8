@@ -15,7 +15,6 @@ import { useEffect } from 'react';
 export const useHistory = (callback, hash = false) => {
 	if (hash) {
 		window.history.push = (path) => {
-			console.log(path);
 			window.history.pushState({}, '', window.location.origin + '/#' + path);
 		};
 	} else {

@@ -12,6 +12,14 @@ const initialState = {
 	near: {
 		initialized: false,
 	},
+	views: {
+		tokensPerOwner: [],
+		seriesPerOwner: [],
+		everything: [],
+		tokens: [],
+		sales: [],
+		series: [],
+	}
 };
 
 export const { appStore, AppProvider } = State(initialState, 'app');

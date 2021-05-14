@@ -35,6 +35,7 @@ impl FungibleTokenReceiver for Contract {
                 nft_contract_id.into(),
                 token_id,
                 ft_token_id,
+                None,
                 price,
                 sender_id,
             ).into()

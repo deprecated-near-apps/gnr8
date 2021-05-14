@@ -161,6 +161,7 @@ impl Contract {
             next_approval_id: token.next_approval_id,
             royalty: token.royalty.clone(),
             series_args: token.series_args.clone(),
+            issued_at: token.issued_at,
         };
         self.tokens_by_id.insert(token_id, &new_token);
 

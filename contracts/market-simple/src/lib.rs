@@ -25,6 +25,13 @@ near_sdk::setup_alloc!();
 
 // TODO check seller supports storage_deposit at ft_token_id they want to post sale in
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SaleArgs {
+    pub sale_conditions: Vec<Price>,
+    pub token_type: TokenType,
+}
+
 const NO_DEPOSIT: Balance = 0;
 const STORAGE_PER_SALE: u128 = 1000 * STORAGE_PRICE_PER_BYTE;
 static DELIMETER: &str = "||";

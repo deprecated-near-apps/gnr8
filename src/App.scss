@@ -69,7 +69,7 @@ body {
         font-family: 'Overpass Mono', monospace;
         font-size: 1rem;
         margin-top: 2rem;
-        background: black;
+        background: rgba(0, 0, 0, 0.75);
         box-shadow: 0 0 32px rgba(0, 0, 0, 0.4);
         .item {
             padding: 0.5rem 0;
@@ -111,6 +111,9 @@ section {
     .menu {
         margin-bottom: $margin;
     }
+}
+
+.create, .mint {
     .editor {
         width: 100%;
         height: calc(100vh - 4rem);
@@ -120,44 +123,92 @@ section {
     }
     .iframe {
         overflow: hidden;
-        display: none;
         text-align: center;
         iframe {
             border: none;
             width: 100%;
             max-width: 50vh;
+            height: calc(50vh - 2rem);
+        }
+        &.display-none {
+            display: none;
+        }
+    }
+    .mint-params {
+        text-align: center;
+        > div {
+            > span {
+                margin-right: 1rem;
+            }
+            padding: 1rem;
+        }
+    }
+}
+
+.gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100vw;
+    .iframe {
+        position: relative;
+        width: 100vw;
+        height: 100vw;
+        iframe {
+            border: none;
+            width: 100%;
             height: 100%;
         }
-        &.preview {
-            display: block;
-            height: calc(50vh - 2rem);
+        > div {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            font-size: 1rem;
+            padding: 0.25rem 0.25rem 0.1rem 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            > div {
+                width: 50%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            > div:nth-child(2) {
+                text-align: right;
+            }
+        }
+        > div:nth-child(2) {
+            position: absolute;
+            bottom: 0;
+        }
+        > div:nth-child(3) {
+            position: absolute;
+            top: 0;
         }
     }
 }
 
 @media (min-width: 576px) {
-    html {
-        font-size: 1.2rem;
-    }
 }
 @media (min-width: 768px) {
     html {
-        font-size: 1.4rem;
+        font-size: 1.1rem;
+    }
+    .gallery .iframe {
+        width: 50vw;
+        height: 50vw;
     }
 }
 @media (min-width: 992px) {
-    html {
-        font-size: 1.6rem;
-    }
 }
 @media (min-width: 1200px) {
-    html {
-        font-size: 1.8rem;
-    }
 }
 @media (min-width: 1600px) {
     html {
-        font-size: 2rem;
+        font-size: 1.2rem;
+    }
+    .gallery .iframe {
+        width: 33.33vw;
+        height: 33.33vw;
     }
 }
 

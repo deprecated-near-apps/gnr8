@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::cmp::min;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap, UnorderedSet};
+use near_sdk::collections::{LazyOption, LookupMap, LookupSet, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::{Base64VecU8, ValidAccountId, U64, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
@@ -25,18 +25,17 @@ mod metadata;
 mod mint;
 mod nft_core;
 mod token;
-
 // CUSTOM
 mod enumerable;
 mod package;
 mod series;
 
-// CUSTOM types and const
-
+// deprecated???
 pub type TokenType = String;
 pub type TypeSupplyCaps = HashMap<TokenType, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
+static SERIES_VARIANT_DELIMETER: &str = "||";
 
 near_sdk::setup_alloc!();
 
@@ -44,23 +43,18 @@ near_sdk::setup_alloc!();
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
-
     pub tokens_by_id: UnorderedMap<TokenId, Token>,
-
     pub owner_id: AccountId,
-
-    /// The storage size in bytes for one account.
     pub extra_storage_in_bytes_per_token: StorageUsage,
-
     pub metadata: LazyOption<NFTMetadata>,
 
     /// CUSTOM
+    pub series_arg_hashes: LookupSet<CryptoHash>,
     pub series_by_name: UnorderedMap<SeriesName, Series>,
+    pub series_per_owner: LookupMap<AccountId, UnorderedSet<SeriesName>>,
     pub tokens_per_series: LookupMap<SeriesName, UnorderedSet<TokenId>>,
-
     pub packages_by_name_version: UnorderedMap<PackageNameVersion, Package>,
     pub tokens_per_package: LookupMap<PackageNameVersion, UnorderedSet<TokenId>>,
-
     pub contract_royalty: u32,
 }
 
@@ -72,7 +66,10 @@ pub enum StorageKey {
     TokensById,
     NftMetadata,
     // CUSTOM
+    SeriesArgHashes,
     SeriesByName,
+    SeriesPerOwner,
+    SeriesPerOwnerInner { account_id_hash: CryptoHash },
     TokensPerSeries,
     TokenPerSeriesInner { series_name_hash: CryptoHash },
     PackagesByNameVersion,
@@ -95,7 +92,10 @@ impl Contract {
                 Some(&metadata),
             ),
 
+            // CUSTOM
+            series_arg_hashes: LookupSet::new(StorageKey::SeriesArgHashes.try_to_vec().unwrap()),
             series_by_name: UnorderedMap::new(StorageKey::SeriesByName.try_to_vec().unwrap()),
+            series_per_owner: LookupMap::new(StorageKey::SeriesPerOwner.try_to_vec().unwrap()),
             tokens_per_series: LookupMap::new(StorageKey::TokensPerSeries.try_to_vec().unwrap()),
 
             packages_by_name_version: UnorderedMap::new(StorageKey::PackagesByNameVersion.try_to_vec().unwrap()),

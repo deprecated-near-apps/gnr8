@@ -37,7 +37,7 @@ pub trait NonFungibleTokenCore {
 
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>);
 
-    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>);
+    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>) -> Vec<U64>;
 
     fn nft_revoke(&mut self, token_id: TokenId, account_id: ValidAccountId);
 
@@ -131,22 +131,39 @@ impl NonFungibleTokenCore for Contract {
         balance: Option<U128>,
     ) -> Option<Payout> {
         assert_one_yocto();
+
         let sender_id = env::predecessor_account_id();
         let previous_token = self.internal_transfer(
             &sender_id,
             receiver_id.as_ref(),
             &token_id,
             approval_id,
-            memo,
+            memo.clone(),
         );
-        refund_approved_account_ids(
-            previous_token.owner_id.clone(),
-            &previous_token.approved_account_ids,
-        );
+
+        // series restrictions
+        if let Some(memo) = memo {
+            let series = self.series_by_name.get(&previous_token.series_args.name).unwrap_or_else(|| panic!("No series {}", previous_token.series_args.name));
+            let SeriesArgs {
+                name,
+                mint,
+                owner: _,
+            } = near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesArgs");
+            assert_eq!(name, previous_token.series_args.name, "SeriesArgs name doesn't match");
+            assert!(previous_token.series_args.mint.is_empty(), "Token already has mint args set");
+            if series.params.enforce_unique_args {
+                let series_arg_hash = hash_account_id(&format!("{}{}", name, mint.join("")));
+                assert!(self.series_arg_hashes.insert(&series_arg_hash), "Token in series has identical args");
+            }
+            // update token
+            let mut token = self.tokens_by_id.get(&token_id).expect("No token");
+            token.series_args.mint = mint;
+            self.tokens_by_id.insert(&token_id, &token);
+        }
 
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
-        let owner_id = previous_token.owner_id;
+        let owner_id = previous_token.owner_id.clone();
         let royalty = self.tokens_by_id.get(&token_id).expect("No token").royalty;
         let mut total_perpetual = 0;
         let payout = if let Some(balance) = balance {
@@ -175,6 +192,12 @@ impl NonFungibleTokenCore for Contract {
         } else {
             None
         };
+
+        // refund any NEAR if storage reqs changed
+        refund_approved_account_ids(
+            previous_token.owner_id,
+            &previous_token.approved_account_ids,
+        );
 
         payout
     }
@@ -262,11 +285,18 @@ impl NonFungibleTokenCore for Contract {
         }
     }
 
+    /// CUSTOM 
     #[payable]
-    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>) {
+    fn nft_approve_batch(
+        &mut self,
+        token_ids: Vec<TokenId>,
+        account_id: ValidAccountId,
+        msg: Option<String>
+    ) -> Vec<U64> {
         assert_at_least_one_yocto();
-        
+        let mut storage_used = 0;
         let account_id: AccountId = account_id.into();
+        let mut approval_ids: Vec<U64> = vec![];
 
         for token_id in token_ids {
             let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
@@ -282,8 +312,10 @@ impl NonFungibleTokenCore for Contract {
                 .approved_account_ids
                 .insert(account_id.clone(), approval_id)
                 .is_none();
+
+            approval_ids.push(approval_id);
     
-            let storage_used = if is_new_approval {
+            storage_used += if is_new_approval {
                 bytes_for_approved_account_id(&account_id)
             } else {
                 0
@@ -291,8 +323,6 @@ impl NonFungibleTokenCore for Contract {
     
             token.next_approval_id += 1;
             self.tokens_by_id.insert(&token_id, &token);
-    
-            refund_deposit(storage_used);
     
             if let Some(msg) = msg.clone() {
                 ext_non_fungible_approval_receiver::nft_on_approve(
@@ -305,9 +335,12 @@ impl NonFungibleTokenCore for Contract {
                     // env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
                     GAS_FOR_NFT_APPROVE,
                 )
-                .as_return(); // Returning this promise
+                .as_return();
             }
         }
+
+        refund_deposit(storage_used);
+        approval_ids
     }
 
     #[payable]

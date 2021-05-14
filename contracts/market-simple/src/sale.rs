@@ -5,7 +5,7 @@ use near_sdk::promise_result_as_success;
 const GAS_FOR_FT_TRANSFER: Gas = 5_000_000_000_000;
 /// seems to be max Tgas can attach to resolve_purchase
 const GAS_FOR_ROYALTIES: Gas = 120_000_000_000_000;
-const GAS_FOR_NFT_TRANSFER: Gas = 15_000_000_000_000;
+const GAS_FOR_NFT_TRANSFER: Gas = 20_000_000_000_000;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -41,6 +41,113 @@ pub struct PurchaseArgs {
 #[near_bindgen]
 impl Contract {
     /// for add sale see: nft_callbacks.rs
+    
+    pub fn add_sale_batch(
+        &mut self,
+        token_ids: Vec<TokenId>,
+        nft_contract_id: ValidAccountId,
+        approval_ids: Vec<U64>,
+        msg: String,
+    ) {
+        let owner_id = env::predecessor_account_id();
+        let owner_paid_storage = self.storage_deposits.get(&owner_id).unwrap_or(0);
+        assert!(
+            owner_paid_storage >= STORAGE_PER_SALE,
+            "Required minimum storage to sell on market: {}",
+            STORAGE_PER_SALE
+        );
+
+        let SaleArgs { sale_conditions, token_type } =
+            near_sdk::serde_json::from_str(&msg).expect("Not valid SaleArgs");
+
+        let mut conditions = HashMap::new();
+
+        for Price { price, ft_token_id } in sale_conditions {
+            if !self.ft_token_ids.contains(ft_token_id.as_ref()) {
+                env::panic(
+                    format!("Token {} not supported by this market", ft_token_id).as_bytes(),
+                );
+            }
+            // sale is denominated in FT or 0 if accepting bids
+            conditions.insert(ft_token_id.into(), price.unwrap_or(U128(0)));
+        }
+
+        // env::log(format!("add_sale for owner: {}", &owner_id).as_bytes());
+
+        for i in 0..token_ids.len() {
+            let token_id = &token_ids[i];
+            let approval_id = approval_ids[i];
+            let contract_and_token_id = format!("{}{}{}", nft_contract_id, DELIMETER, token_id);
+            let bids = HashMap::new();
+            
+            self.sales.insert(
+                &contract_and_token_id,
+                &Sale {
+                    owner_id: owner_id.clone(),
+                    approval_id,
+                    token_type: token_type.clone(),
+                    conditions: conditions.clone(),
+                    bids,
+                },
+            );
+
+            // extra for views
+
+            let mut by_owner_id = self.by_owner_id.get(&owner_id).unwrap_or_else(|| {
+                UnorderedSet::new(
+                    StorageKey::ByOwnerIdInner {
+                        account_id_hash: hash_account_id(&owner_id),
+                    }
+                    .try_to_vec()
+                    .unwrap(),
+                )
+            });
+
+            let owner_occupied_storage = u128::from(by_owner_id.len()) * STORAGE_PER_SALE;
+            assert!(
+                owner_paid_storage > owner_occupied_storage,
+                "User has more sales than storage paid"
+            );
+            by_owner_id.insert(&contract_and_token_id);
+            self.by_owner_id.insert(&owner_id, &by_owner_id);
+
+            let mut by_nft_contract_id = self
+                .by_nft_contract_id
+                .get(nft_contract_id.as_ref())
+                .unwrap_or_else(|| {
+                    UnorderedSet::new(
+                        StorageKey::ByNFTContractIdInner {
+                            account_id_hash: hash_account_id(nft_contract_id.as_ref()),
+                        }
+                        .try_to_vec()
+                        .unwrap(),
+                    )
+                });
+            by_nft_contract_id.insert(&token_id);
+            self.by_nft_contract_id
+                .insert(nft_contract_id.as_ref(), &by_nft_contract_id);
+
+            let current_token_type = token_type.clone();
+            if let Some(current_token_type) = current_token_type {
+                assert!(token_id.contains(&current_token_type), "TokenType should be substr of TokenId");
+                let mut by_nft_token_type = self
+                    .by_nft_token_type
+                    .get(&current_token_type)
+                    .unwrap_or_else(|| {
+                        UnorderedSet::new(
+                            StorageKey::ByNFTTokenTypeInner {
+                                token_type_hash: hash_account_id(&current_token_type),
+                            }
+                            .try_to_vec()
+                            .unwrap(),
+                        )
+                    });
+                    by_nft_token_type.insert(&contract_and_token_id);
+                self.by_nft_token_type
+                    .insert(&current_token_type, &by_nft_token_type);
+            }
+        }
+    }
 
     /// TODO remove without redirect to wallet? panic reverts
     #[payable]
@@ -77,7 +184,7 @@ impl Contract {
     }
 
     #[payable]
-    pub fn offer(&mut self, nft_contract_id: ValidAccountId, token_id: String) {
+    pub fn offer(&mut self, nft_contract_id: ValidAccountId, token_id: String, memo: Option<String>) {
         let contract_id: AccountId = nft_contract_id.into();
         let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         let mut sale = self.sales.get(&contract_and_token_id).expect("No sale");
@@ -99,6 +206,7 @@ impl Contract {
                 contract_id,
                 token_id,
                 ft_token_id,
+                memo,
                 U128(deposit),
                 buyer_id,
             );
@@ -164,6 +272,7 @@ impl Contract {
             contract_id,
             token_id,
             ft_token_id.into(),
+            None,
             bid.price.clone(),
             bid.owner_id.clone(),
         );
@@ -175,6 +284,7 @@ impl Contract {
         nft_contract_id: AccountId,
         token_id: String,
         ft_token_id: AccountId,
+        memo: Option<String>,
         price: U128,
         buyer_id: AccountId,
     ) -> Promise {
@@ -184,7 +294,7 @@ impl Contract {
             buyer_id.clone(),
             token_id,
             sale.approval_id,
-            None,
+            memo,
             price,
             &nft_contract_id,
             1,

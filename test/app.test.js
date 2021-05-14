@@ -35,7 +35,7 @@ const stableId = 'stable.' + contractId;
 /// the market contract
 const marketId = 'market.' + contractId;
 
-const seriesPremintPrepend = '||';
+const SERIES_VARIANT_DELIMETER = '||';
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
@@ -80,35 +80,42 @@ describe('deploy contract ' + contractName, () => {
 	};
 	const argsBatch = {
 		series_name: reglExample.name,
-		limit: '18',
+		limit: '19',
 	};
 
 	// token_ids in Rust will be base64 hashes of series name + user minting args (unique)
-	const tokenIds = ([
-		reglExample.name + args1.series_args.mint.join(''),
-		reglExample.name + args2.series_args.mint.join(''),
-	].concat(([2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19])
-		.map((id) => reglExample.name + id))
-	).map((src, i) => {
-		const hash = sha256.create();
-		return (i > 1 ? seriesPremintPrepend : '') + Buffer.from(hash.update(src).array()).toString('base64');
-	});
-
-	console.log(tokenIds)
+	const tokenIds = []
+	for (let i = 0; i < 20; i++) {
+		tokenIds.push(reglExample.name + SERIES_VARIANT_DELIMETER + i)
+	}
 
 	// batch
-	const numBatch = 8
+	const numBatch = 18
 	const argsBatchApprove = {
 		token_ids: tokenIds.slice(2, numBatch + 2),
 		account_id: marketId,
+		/// otherwise nft contract will try to promise call sale contract (lots of promise calls == lots of gas!)
+		// msg: JSON.stringify({
+		// 	token_type: reglExample.name,
+		// 	sale_conditions: [
+		// 		{ ft_token_id: "near", price: parseNearAmount('1')}
+		// 	]
+		// })
+	};
+
+	console.log(argsBatchApprove.token_ids)
+
+	const argsAddSaleBatch = {
+		token_ids: tokenIds.slice(2, numBatch + 2),
+		nft_contract_id: contractId,
+		approval_ids: [],
 		msg: JSON.stringify({
+			token_type: reglExample.name,
 			sale_conditions: [
 				{ ft_token_id: "near", price: parseNearAmount('1')}
 			]
 		})
 	};
-
-	console.log('\n\n Token 1: \n', tokenIds[0], '\n', reglExample.name + args1.series_args.mint.join(''));
 
 	/// most of the following code in beforeAll can be used for deploying and initializing contracts
 	/// skip all tests if you want to deploy to production or testnet without any NFTs
@@ -203,7 +210,7 @@ describe('deploy contract ' + contractName, () => {
 
 		// should be [false], just testing api
 		const added = await contractAccount.functionCall(marketId, "add_ft_token_ids", { ft_token_ids }, GAS);
-		console.log('\n\n added these tokens', supportedTokens, added, '\n\n');
+		console.log('\n\n added these tokens', supportedTokens, '\n\n');
 
 		/// find out how much needed for market storage
 		storageMarket = await contractAccount.viewFunction(marketId, 'storage_amount');
@@ -261,22 +268,32 @@ describe('deploy contract ' + contractName, () => {
 	test('contract owner (series owner) mints a batch of tokens', async () => {
 		/// works cause supply 2 and using arg2
 		await contractAccount.functionCall(contractId, 'nft_mint_batch', argsBatch, GAS, parseNearAmount('1'));
-		const { token, src } = await getTokenAndSrc(tokenIds[2]);
-		console.log(token)
-		expect(token.series_args.owner.length).toEqual(0);
+		
+		const tokens = await contractAccount.viewFunction(
+			contractId, 'nft_tokens_for_series', {
+				series_name: argsBatch.series_name,
+				from_index: '0',
+				limit: '100'
+			})
+
+		console.log(tokens)
+
+		expect(tokens.length).toEqual(20);
 	});
 
 	test('contract owner approves batch of tokens for sale on market', async () => {
 		await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS,
 			new BN(storageMarket).mul(new BN(numBatch)).toString()
 		);
-		await contractAccount.functionCall(contractId, 'nft_approve_batch', argsBatchApprove, GAS, parseNearAmount('1'));
+		const result = await contractAccount.functionCall(contractId, 'nft_approve_batch', argsBatchApprove, GAS, parseNearAmount('1'));
+		argsAddSaleBatch.approval_ids = JSON.parse(Buffer.from(result.status.SuccessValue, 'base64').toString('utf-8'))
+		console.log(argsAddSaleBatch)
+		await contractAccount.functionCall(marketId, 'add_sale_batch', argsAddSaleBatch, GAS);
 		const sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_contract_id', {
 			nft_contract_id: contractId,
 			from_index: '0',
 			limit: '100'
 		});
-		console.log(sales)
 		expect(sales.length).toEqual(numBatch);
 	});
 
