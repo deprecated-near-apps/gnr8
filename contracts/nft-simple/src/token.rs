@@ -8,11 +8,15 @@ pub struct Token {
     pub owner_id: AccountId,
     pub approved_account_ids: HashMap<AccountId, U64>,
     pub next_approval_id: u64,
-    
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct TokenData {
     // CUSTOM - fields
-    pub series_args: SeriesArgs,
     pub royalty: HashMap<AccountId, u32>,
     pub issued_at: U64,
+    pub num_transfers: U64,
+    pub series_args: SeriesArgs,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,4 +29,6 @@ pub struct JsonToken {
     // CUSTOM - fields
     pub series_args: SeriesArgs,
     pub royalty: HashMap<AccountId, u32>,
+    pub issued_at: U64,
+    pub num_transfers: U64,
 }

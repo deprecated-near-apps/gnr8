@@ -30,6 +30,8 @@ export const getParams = (code) => {
 	} catch (e) {
 		return console.warn(e);
 	}
+	if (!params.mint) params.mint = {}
+	if (!params.owner) params.owner = {}
 	return { code: code.replace(paramsMatch, ''), params };
 };
 

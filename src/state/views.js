@@ -10,7 +10,7 @@ export const getTokensForSeries = (series_name) => async ({ getState, update }) 
 }
 
 export const loadEverythingForOwner = (account_id) => async ({ update, getState }) => {
-    const { contractAccount } = getState()
+    const { contractAccount, account } = getState()
     const tokensPerOwner = await contractAccount.viewFunction(contractId, 'nft_tokens_for_owner', {
         account_id,
         from_index: '0',
@@ -33,11 +33,27 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
             from_index: '0',
             limit: '100'
         });
+        series.unsoldTokens = tokensPerOwner.filter(({ num_transfers, series_args: { name } }) => 
+            num_transfers === '0' && name === series.name
+        )
+        if (account) {
+            series.firstSales = (await contractAccount.viewFunction(marketId, 'get_sales_by_owner_id', {
+                account_id: account.accountId,
+                from_index: '0',
+                limit: '100'
+            })).filter(({ token_id, token_type }) => token_type === series.name &&
+                series.unsoldTokens.some(({ token_id: unsold_id }) => token_id === unsold_id)
+            );
+        }
+        
         // alias for compat with tokens
         series.codeId = series.name
         series.codeSrc = series.src
     }))
-    update('views', { seriesPerOwner, tokensPerOwner })
+    update('views', {
+        seriesPerOwner,
+        tokensPerOwner: tokensPerOwner.filter(({ num_transfers }) => num_transfers !== '0')
+    })
 }
 
 export const loadEverything = () => async ({ update, dispatch }) => {
@@ -77,9 +93,6 @@ export const loadSales = () => async ({ getState, update }) => {
     await Promise.all(seriesNames.map(async (name) => {
         const series = await loadSeries(contractAccount, name)
         series.sales = sales.filter(({ token_type }) => token_type === name)
-        if (sales.length) {
-            series.issued_at = sales[0].issued_at
-        }
         // alias for compat with tokens
         series.codeId = name
         series.codeSrc = series.src

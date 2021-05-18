@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::cmp::min;
+use std::mem::size_of;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, LookupSet, UnorderedMap, UnorderedSet};
@@ -35,7 +36,7 @@ pub type TokenType = String;
 pub type TypeSupplyCaps = HashMap<TokenType, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
-static SERIES_VARIANT_DELIMETER: &str = "||";
+static SERIES_VARIANT_DELIMETER: &str = ":";
 
 near_sdk::setup_alloc!();
 
@@ -49,6 +50,7 @@ pub struct Contract {
     pub metadata: LazyOption<NFTMetadata>,
 
     /// CUSTOM
+    pub token_data_by_id: LookupMap<TokenId, TokenData>,
     pub series_arg_hashes: LookupSet<CryptoHash>,
     pub series_by_name: UnorderedMap<SeriesName, Series>,
     pub series_per_owner: LookupMap<AccountId, UnorderedSet<SeriesName>>,
@@ -66,6 +68,7 @@ pub enum StorageKey {
     TokensById,
     NftMetadata,
     // CUSTOM
+    TokenDataById,
     SeriesArgHashes,
     SeriesByName,
     SeriesPerOwner,
@@ -93,6 +96,7 @@ impl Contract {
             ),
 
             // CUSTOM
+            token_data_by_id: LookupMap::new(StorageKey::TokenDataById.try_to_vec().unwrap()),
             series_arg_hashes: LookupSet::new(StorageKey::SeriesArgHashes.try_to_vec().unwrap()),
             series_by_name: UnorderedMap::new(StorageKey::SeriesByName.try_to_vec().unwrap()),
             series_per_owner: LookupMap::new(StorageKey::SeriesPerOwner.try_to_vec().unwrap()),

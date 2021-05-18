@@ -25,9 +25,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		dispatch(loadCodeFromSrc('mint-preview', series.src))
 	}, [salesBySeries]);
 
-	const handlePurchase = async () => {
+	const handleOffer = async () => {
 		const { series, args } = state
+		if (!series.sales.length) {
+			return alert('None left of this series')
+		}
+
 		const mint = Object.values(args)
+		
 		if (series.params.mint.length && !mint.length) {
 			return alert('Choose some values to make this unique')
 		}
@@ -40,12 +45,11 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		if (exists) {
 			return alert('A token with these values exists, try another combination')
 		}
-
 		await account.functionCall(marketId, 'offer', {
 			nft_contract_id: contractId,
-			token_id: state.sale.token_id,
+			token_id: series.sales[0].token_id,
 			memo: JSON.stringify({
-				name: state.series.name,
+				name: series.name,
 				mint,
 				owner: []
 			})
@@ -79,7 +83,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			<div className="menu no-barcode">
 				<div className="bar">
 					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}>Options</div>
-					<div onClick={() => handlePurchase()}>Purchase</div>
+					<div onClick={() => handleOffer()}>Make Offer</div>
 				</div>
 				{
 					mintMenu === 'left' && <div className="sub below">
@@ -99,18 +103,37 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			<div className="mint-params">
 				{
 					params.map(({ name, type }) => {
+						console.log(type)
 						// TODO debounce
 						return <div key={name}>
 							<span>{name}</span>
-							<input type="color" onChange={(e) => {
-								const color = hexToRgb(e.target.value, true, true)
-								const input = color.concat([1])
-								const newArgs = { ...args, [name]: JSON.stringify(input) }
-								setState({ ...state, args: newArgs })
-								let newCode = series.src
-								Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v))
-								dispatch(loadCodeFromSrc('mint-preview', newCode))
-							}} />
+
+							{
+								type.indexOf('webgl-color') > -1 &&
+								<input type="color" onChange={(e) => {
+									const color = hexToRgb(e.target.value, true, true)
+									const input = color.concat([1])
+									const newArgs = { ...args, [name]: JSON.stringify(input) }
+									setState({ ...state, args: newArgs })
+									let newCode = series.src
+									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v))
+									dispatch(loadCodeFromSrc('mint-preview', newCode))
+								}} />
+							}
+							{
+								type.indexOf('webgl-float') > -1 &&
+								<input type="number" onChange={(e) => {
+									const input = e.target.value
+									const newArgs = { ...args, [name]: JSON.stringify(input) }
+									setState({ ...state, args: newArgs })
+									let newCode = series.src
+									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v))
+									dispatch(loadCodeFromSrc('mint-preview', newCode))
+								}} />
+							}
+
+
+							
 						</div>
 					})
 				}

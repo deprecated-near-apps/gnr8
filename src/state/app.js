@@ -11,6 +11,7 @@ const initialState = {
 	},
 	near: {
 		initialized: false,
+		pendingApprovals: []
 	},
 	views: {
 		tokensPerOwner: [],

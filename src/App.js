@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 
 import { appStore, onAppMount } from './state/app';
-import { networkId } from './state/near';
+import { networkId, parseHashes } from './state/near';
 import { useHistory, pathAndArgs } from './utils/history';
 
 import { Menu } from './components/Menu';
@@ -19,7 +19,7 @@ import './App.scss';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
-	const { app, app: { menu }, views, wallet, contractAccount, account, loading } = state;
+	const { app, app: { menu }, near, views, wallet, contractAccount, account, loading } = state;
 
 	const onMount = () => {
 		dispatch(onAppMount());
@@ -30,6 +30,10 @@ const App = () => {
 		update('app.href', window.location.href);
 	}, true);
 	const { path, args } = pathAndArgs();
+	if (args.transactionHashes) {
+		dispatch(parseHashes(args.transactionHashes))
+	}
+
 
 	const toggleMainMenu = (which) => {
 		update('app.menu', menu === which ? false : which);
@@ -54,7 +58,7 @@ const App = () => {
 								{account.accountId.replace('.' + networkId, '')}
 							</span>
 						</div> :
-						<div onClick={() => wallet.signIn()}>WALLET</div>}
+						<div onClick={() => wallet.signIn()}>SIGN IN</div>}
 				</>}
 				<div onClick={() => toggleMainMenu('right')}>GNR8</div>
 			</div>
@@ -82,7 +86,7 @@ const App = () => {
 		<section>
 			{ path === '/' && <Market {...{ dispatch, views }} /> }
 			{ path === '/series' && <Series {...{ dispatch, views, args }} /> }
-			{ path === '/collection' && <Collection {...{ dispatch, views, account }} /> }
+			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, update, dispatch, account }} /> }
 			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
 			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }

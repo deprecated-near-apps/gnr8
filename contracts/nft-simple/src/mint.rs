@@ -68,33 +68,50 @@ impl Contract {
             mint: vec![],
             owner: vec![],
         };
+
+        let token_data = TokenData{
+            series_args,
+            royalty: royalty.clone(),
+            issued_at: env::block_timestamp().into(),
+            num_transfers: U64(0),
+        };
+
+        let mut tokens_per_owner = self.tokens_per_owner.get(&owner_id).unwrap_or_else(|| {
+            UnorderedSet::new(
+                StorageKey::TokenPerOwnerInner {
+                    account_id_hash: hash_account_id(&owner_id),
+                }
+                .try_to_vec()
+                .unwrap(),
+            )
+        });
+
         // create tokens
         for i in token_supply..new_total_supply {
             let token_id = get_token_id(&series_name, i);
             tokens_per_series.insert(&token_id);
-            self.tokens_per_series.insert(&series_name, &tokens_per_series);
             // insert token_ids
             for package in &mut packages {
                 package.insert(&token_id);
             }
-
             // insert token like normal
             let token = Token {
                 owner_id: owner_id.clone(),
                 approved_account_ids: Default::default(),
                 next_approval_id: 0,
-                royalty: royalty.clone(),
-                series_args: series_args.clone(),
-                issued_at: env::block_timestamp().into()
             };
             assert!(
                 self.tokens_by_id.insert(&token_id, &token).is_none(),
                 "Token already exists"
             );
-            self.internal_add_token_to_owner(&token.owner_id, &token_id);
+            self.token_data_by_id.insert(&token_id, &token_data);
+            tokens_per_owner.insert(&token_id);
         }
 
-        // update tokens per package
+        // commit these collections
+        self.tokens_per_owner.insert(&owner_id, &tokens_per_owner);
+        self.tokens_per_series.insert(&series_name, &tokens_per_series);
+        // commit tokens per package (many to many)
         for i in 0..packages.len() {
             self.tokens_per_package.insert(&series.params.packages[i], &packages[i]);
         }
@@ -181,14 +198,17 @@ impl Contract {
             owner_id,
             approved_account_ids: Default::default(),
             next_approval_id: 0,
-            royalty,
-            series_args,
-            issued_at: env::block_timestamp().into()
         };
         assert!(
             self.tokens_by_id.insert(&token_id, &token).is_none(),
             "Token already exists"
         );
+        self.token_data_by_id.insert(&token_id, &TokenData {
+            series_args,
+            royalty,
+            issued_at: env::block_timestamp().into(),
+            num_transfers: U64(0),
+        });
         self.internal_add_token_to_owner(&token.owner_id, &token_id);
 
         // refund unused deposit amount

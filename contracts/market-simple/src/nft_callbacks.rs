@@ -10,6 +10,13 @@ trait NonFungibleTokenApprovalsReceiver {
         approval_id: U64,
         msg: String,
     );
+    fn nft_on_approve_batch(
+        &mut self,
+        token_ids: Vec<TokenId>,
+        owner_id: AccountId,
+        approval_ids: Vec<U64>,
+        msg: String,
+    );
 }
 
 #[near_bindgen]
@@ -48,17 +55,18 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
 
         // env::log(format!("add_sale for owner: {}", &owner_id).as_bytes());
 
-        let bids = HashMap::new();
-
         let contract_and_token_id = format!("{}{}{}", nft_contract_id, DELIMETER, token_id);
         self.sales.insert(
             &contract_and_token_id,
             &Sale {
                 owner_id: owner_id.clone().into(),
+                created_at: env::block_timestamp().into(),
                 approval_id,
                 token_type: token_type.clone(),
+                nft_contract_id: nft_contract_id.clone(),
+                token_id: token_id.clone(),
                 conditions,
-                bids,
+                bids: None,
             },
         );
 
@@ -116,5 +124,28 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             self.by_nft_token_type
                 .insert(&token_type, &by_nft_token_type);
         }
+    }
+
+    #[payable]
+    fn nft_on_approve_batch(
+        &mut self,
+        token_ids: Vec<TokenId>,
+        owner_id: AccountId,
+        approval_ids: Vec<U64>,
+        msg: String,
+    ) {
+        let deposit = env::attached_deposit();
+        let mut balance: u128 = self.storage_deposits.get(&owner_id).unwrap_or(0);
+        balance += deposit;
+        self.storage_deposits.insert(&owner_id, &balance);
+
+        self.add_sale_batch_internal(
+            token_ids,
+            env::predecessor_account_id(),
+            approval_ids,
+            msg,
+            owner_id,
+            balance
+        );
     }
 }

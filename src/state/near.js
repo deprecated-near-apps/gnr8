@@ -20,6 +20,39 @@ export const {
 	}
 } = nearAPI;
 
+let successValues = {}
+let approvals = []
+
+export const parseHashes = (hashes) => async ({ update, getState, dispatch }) => {
+	if (!getState()) return
+	const { near } = getState();
+	if (!near?.connection) return
+	hashes.split(',').map(async (hash) => {
+		if (successValues[hash]) return
+		successValues[hash] = near.connection.provider.txStatus(hash, 'si1.testnet').then((result) => {
+			if (result?.status?.SuccessValue === "") return
+			try {
+				const functionCalls = result?.transaction?.actions
+					.filter((obj) => obj.FunctionCall)
+					.map((obj) => obj.FunctionCall)
+				functionCalls.forEach(({ method_name, args }) => {
+					if (method_name !== 'nft_approve_batch') return
+					const approval_ids = successValues[hash] = JSON.parse(atob(result.status.SuccessValue))
+					const { token_ids } = JSON.parse(atob(args))
+					approvals.push({
+						token_ids,
+						nft_contract_id: contractId,
+						approval_ids,
+					})
+				})
+				update('near', { pendingApprovals: approvals })
+			} catch (e) {
+				console.warn(e)
+			}
+		})
+	})
+}
+
 export const initNear = () => async ({ update, getState, dispatch }) => {
 	const { near, wallet, contractAccount } = await getWallet();
 

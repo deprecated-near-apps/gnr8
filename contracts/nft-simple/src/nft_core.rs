@@ -3,6 +3,7 @@ use near_sdk::json_types::{ValidAccountId, U64};
 use near_sdk::{ext_contract, log, Gas, PromiseResult};
 
 const GAS_FOR_NFT_APPROVE: Gas = 15_000_000_000_000;
+const GAS_FOR_NFT_APPROVE_BATCH: Gas = 60_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
 const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;
 const NO_DEPOSIT: Balance = 0;
@@ -37,7 +38,7 @@ pub trait NonFungibleTokenCore {
 
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>);
 
-    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>) -> Vec<U64>;
+    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>);
 
     fn nft_revoke(&mut self, token_id: TokenId, account_id: ValidAccountId);
 
@@ -67,6 +68,13 @@ trait NonFungibleTokenApprovalsReceiver {
         token_id: TokenId,
         owner_id: AccountId,
         approval_id: U64,
+        msg: String,
+    );
+    fn nft_on_approve_batch(
+        &mut self,
+        token_ids: Vec<TokenId>,
+        owner_id: AccountId,
+        approval_ids: Vec<U64>,
         msg: String,
     );
 }
@@ -141,30 +149,31 @@ impl NonFungibleTokenCore for Contract {
             memo.clone(),
         );
 
+        let mut token_data = self.token_data_by_id.get(&token_id).expect("No token data");
         // series restrictions
         if let Some(memo) = memo {
-            let series = self.series_by_name.get(&previous_token.series_args.name).unwrap_or_else(|| panic!("No series {}", previous_token.series_args.name));
+            let series = self.series_by_name.get(&token_data.series_args.name)
+                .unwrap_or_else(|| panic!("No series {}", token_data.series_args.name));
             let SeriesArgs {
                 name,
                 mint,
                 owner: _,
             } = near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesArgs");
-            assert_eq!(name, previous_token.series_args.name, "SeriesArgs name doesn't match");
-            assert!(previous_token.series_args.mint.is_empty(), "Token already has mint args set");
+            assert_eq!(name, token_data.series_args.name, "SeriesArgs name doesn't match");
+            assert!(token_data.series_args.mint.is_empty(), "Token already has mint args set");
             if series.params.enforce_unique_args {
                 let series_arg_hash = hash_account_id(&format!("{}{}", name, mint.join("")));
                 assert!(self.series_arg_hashes.insert(&series_arg_hash), "Token in series has identical args");
             }
             // update token
-            let mut token = self.tokens_by_id.get(&token_id).expect("No token");
-            token.series_args.mint = mint;
-            self.tokens_by_id.insert(&token_id, &token);
+            token_data.series_args.mint = mint;
+            self.token_data_by_id.insert(&token_id, &token_data);
         }
 
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
         let owner_id = previous_token.owner_id.clone();
-        let royalty = self.tokens_by_id.get(&token_id).expect("No token").royalty;
+        let royalty = self.token_data_by_id.get(&token_id).expect("No token").royalty;
         let mut total_perpetual = 0;
         let payout = if let Some(balance) = balance {
             let balance_u128 = u128::from(balance);
@@ -292,17 +301,18 @@ impl NonFungibleTokenCore for Contract {
         token_ids: Vec<TokenId>,
         account_id: ValidAccountId,
         msg: Option<String>
-    ) -> Vec<U64> {
+    ) {
         assert_at_least_one_yocto();
         let mut storage_used = 0;
         let account_id: AccountId = account_id.into();
         let mut approval_ids: Vec<U64> = vec![];
+        let owner_id = env::predecessor_account_id();
 
-        for token_id in token_ids {
+        for token_id in token_ids.clone() {
             let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
 
             assert_eq!(
-                &env::predecessor_account_id(),
+                &owner_id,
                 &token.owner_id,
                 "Predecessor must be the token owner."
             );
@@ -316,31 +326,26 @@ impl NonFungibleTokenCore for Contract {
             approval_ids.push(approval_id);
     
             storage_used += if is_new_approval {
-                bytes_for_approved_account_id(&account_id)
+                account_id.len() as u64 + 4 + size_of::<u64>() as u64
             } else {
                 0
             };
     
             token.next_approval_id += 1;
             self.tokens_by_id.insert(&token_id, &token);
-    
-            if let Some(msg) = msg.clone() {
-                ext_non_fungible_approval_receiver::nft_on_approve(
-                    token_id,
-                    token.owner_id,
-                    approval_id,
-                    msg,
-                    &account_id,
-                    NO_DEPOSIT,
-                    // env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
-                    GAS_FOR_NFT_APPROVE,
-                )
-                .as_return();
-            }
         }
-
-        refund_deposit(storage_used);
-        approval_ids
+    
+        if let Some(msg) = msg.clone() {
+            ext_non_fungible_approval_receiver::nft_on_approve_batch(
+                token_ids,
+                owner_id,
+                approval_ids,
+                msg,
+                &account_id,
+                env::attached_deposit() - env::storage_byte_cost() * Balance::from(storage_used),
+                env::prepaid_gas() - GAS_FOR_NFT_APPROVE_BATCH,
+            );
+        }
     }
 
     #[payable]
@@ -378,12 +383,20 @@ impl NonFungibleTokenCore for Contract {
 
     fn nft_token(&self, token_id: TokenId) -> Option<JsonToken> {
         if let Some(token) = self.tokens_by_id.get(&token_id) {
+            let TokenData {
+                series_args,
+                royalty,
+                issued_at,
+                num_transfers
+            } = self.token_data_by_id.get(&token_id).expect("No token data");
             Some(JsonToken {
                 token_id,
                 owner_id: token.owner_id,
                 approved_account_ids: token.approved_account_ids,
-                series_args: token.series_args,
-                royalty: token.royalty,
+                series_args,
+                royalty,
+                issued_at,
+                num_transfers,
             })
         } else {
             None

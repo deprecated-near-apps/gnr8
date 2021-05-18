@@ -1,18 +1,46 @@
 import React, { useEffect, useState } from 'react';
+import BN from 'bn.js'
 import { loadEverything, loadEverythingForOwner } from '../state/views';
 import { loadCodeFromSrc } from '../state/code';
-import { GAS, contractId, parseNearAmount } from '../state/near';
+import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
+import { get, set, del } from '../utils/storage';
 
-export const Collection = ({ dispatch, views, account }) => {
+const TEMP_APPROVAL_DATA = 'TEMP_APPROVAL_DATA'
 
-	const { everything, tokensPerOwner, seriesPerOwner } = views
-	const tokens = account ? [...tokensPerOwner, ...seriesPerOwner] : everything
+export const Collection = ({ dispatch, views, account, near }) => {
+	if (!account) return null
 
-	console.log(tokens)
+	const { tokensPerOwner, seriesPerOwner } = views
+	const tokens = [...tokensPerOwner, ...seriesPerOwner]
 
 	useEffect(() => {
-		account ? dispatch(loadEverythingForOwner(account.accountId)) : dispatch(loadEverything())
+		dispatch(loadEverythingForOwner(account.accountId))
 	}, [])
+
+	useEffect(() => {
+		const { token_type, token_ids } = get(TEMP_APPROVAL_DATA)
+		if (!token_type || !account || !near?.pendingApprovals.length) return
+		if (!window.confirm('You have pending NFTs to put up for sale. Would you like to list them now?')) {
+			if (window.confirm('Remove the pending NFTs? (do not show this message again)')) {
+				del(TEMP_APPROVAL_DATA)
+			}
+		}
+		near.pendingApprovals.forEach(async (approvals) => {
+			if (JSON.stringify(approvals.token_ids) !== JSON.stringify(token_ids)) {
+				console.warn('Mismatched token_ids on approval', token_ids)
+			}
+			const storagePerSale = await account.viewFunction(marketId, 'storage_amount');
+			account.functionCall(marketId, 'add_sale_batch', {
+				...approvals,
+				msg: JSON.stringify({
+					token_type,
+					sale_conditions: [
+						{ ft_token_id: "near", price: parseNearAmount(window.prompt('How much? (in NEAR)'))}
+					]
+				})
+			}, GAS, new BN(storagePerSale).mul(new BN(approvals.token_ids.length)).toString())
+		})
+	}, [account, near.pendingApprovals]);
 
 	useEffect(() => {
 		if (!tokens.length) return
@@ -24,25 +52,50 @@ export const Collection = ({ dispatch, views, account }) => {
 	return <>
 		<div className="gallery">
 			{
-				tokens.map(({ codeId, owner_id, params, sales = [], tokens = [] }) => 
+				tokens.map(({
+					codeId, owner_id, params,
+					sales = [], tokens = [], unsoldTokens = [], firstSales = []
+				}) => 
 				<div key={codeId} className="iframe">
 					<iframe {...{ id: codeId }} />
 					<div onClick={() => params ? history.push('/mint/' + codeId) : history.push('/token/' + codeId)}>
-						<div>{codeId}</div>
+						<div>{ params && 'Series: '}{codeId}</div>
 						<div>{owner_id}</div>
 					</div>
 					{ params && <div>
-						<div>{tokens.length} / {params.max_supply} Minted</div>
-						<div onClick={() => {
-							const limit = window.prompt('How Many?')
-							if (tokens.length + parseInt(limit, 10) > parseInt(params.max_supply, 10)) {
-								return alert('Cannot mint more than max supply')
-							}
-							account.functionCall(contractId, 'nft_mint_batch', {
-								series_name: codeId,
-								limit,
-							}, GAS, parseNearAmount('0.1'))
-						}}>Mint</div>
+						<div>
+							<span>{tokens.length} / {params.max_supply} Minted</span>
+						</div>
+						<div>
+							{tokens.length < parseInt(params.max_supply, 10) &&
+							<span onClick={() => {
+								const limit = window.prompt('How Many?')
+								if (unsoldTokens.length + parseInt(limit, 10) > parseInt(params.max_supply, 10)) {
+									return alert('Cannot mint more than max supply')
+								}
+								account.functionCall(contractId, 'nft_mint_batch', {
+									series_name: codeId,
+									limit,
+								}, GAS, parseNearAmount('1'))
+							}}>Mint</span>}
+
+							{unsoldTokens.length - firstSales.length > 0 &&
+							<span onClick={() => {
+								const limit = window.prompt('How Many?')
+								if (parseInt(limit, 10) > unsoldTokens.length) {
+									return alert('Cannot sell more than you own')
+								}
+								const token_ids = unsoldTokens.map(({ token_id }) => token_id)
+								set(TEMP_APPROVAL_DATA, {
+									token_type: codeId,
+									token_ids,
+								})
+								account.functionCall(contractId, 'nft_approve_batch', {
+									token_ids,
+									account_id: marketId,
+								}, GAS, parseNearAmount('1'))
+							}}>Sell</span>}
+						</div>
 					</div> }
 				</div>)
 			}

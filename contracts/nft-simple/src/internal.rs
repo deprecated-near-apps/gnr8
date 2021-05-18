@@ -1,6 +1,5 @@
 use crate::*;
 use near_sdk::{log, CryptoHash};
-use std::mem::size_of;
 
 pub(crate) fn royalty_to_payout(a: u32, b: Balance) -> U128 {
     U128(a as u128 * b / 10_000u128)
@@ -159,9 +158,6 @@ impl Contract {
             owner_id: receiver_id.clone(),
             approved_account_ids: Default::default(),
             next_approval_id: token.next_approval_id,
-            royalty: token.royalty.clone(),
-            series_args: token.series_args.clone(),
-            issued_at: token.issued_at,
         };
         self.tokens_by_id.insert(token_id, &new_token);
 

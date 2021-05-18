@@ -5,6 +5,9 @@ import { loadCodeFromSrc } from '../state/code';
 export const Market = ({ dispatch, views }) => {
 
 	const { everything } = views
+
+	console.log(everything)
+	
 	useEffect(() => {
 		dispatch(loadEverything())
 	}, [])

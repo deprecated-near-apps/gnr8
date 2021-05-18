@@ -8,6 +8,7 @@ const getConfig = require('../src/config');
 
 const {getPackages} = require('./examples/packages');
 const {reglExample} = require('./examples/regl-example');
+const {reglExample2} = require('./examples/regl-example-2');
 
 const { 
 	Contract, KeyPair, Account,
@@ -35,7 +36,7 @@ const stableId = 'stable.' + contractId;
 /// the market contract
 const marketId = 'market.' + contractId;
 
-const SERIES_VARIANT_DELIMETER = '||';
+const SERIES_VARIANT_DELIMETER = ':';
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
 
@@ -51,12 +52,13 @@ const getTokenAndSrc = async (token_id) => {
 describe('deploy contract ' + contractName, () => {
 	let alice, aliceId, bob, bobId,
 		stableAccount, marketAccount,
-		storageMinimum, storageMarket;
+		storageMinimum, storagePerSale;
 
 	const t = Date.now();
 	const arg1 = t;
 	const arg2 = t + '1';
 	reglExample.name = reglExample.name + t;
+	reglExample2.name = reglExample2.name + t;
 	const owner = [
 		'0.01'
 	];
@@ -88,22 +90,18 @@ describe('deploy contract ' + contractName, () => {
 	for (let i = 0; i < 20; i++) {
 		tokenIds.push(reglExample.name + SERIES_VARIANT_DELIMETER + i)
 	}
+	// token_ids in Rust will be base64 hashes of series name + user minting args (unique)
+	const tokenIds2 = []
+	for (let i = 0; i < 20; i++) {
+		tokenIds2.push(reglExample2.name + SERIES_VARIANT_DELIMETER + i)
+	}
 
 	// batch
 	const numBatch = 18
 	const argsBatchApprove = {
 		token_ids: tokenIds.slice(2, numBatch + 2),
 		account_id: marketId,
-		/// otherwise nft contract will try to promise call sale contract (lots of promise calls == lots of gas!)
-		// msg: JSON.stringify({
-		// 	token_type: reglExample.name,
-		// 	sale_conditions: [
-		// 		{ ft_token_id: "near", price: parseNearAmount('1')}
-		// 	]
-		// })
 	};
-
-	console.log(argsBatchApprove.token_ids)
 
 	const argsAddSaleBatch = {
 		token_ids: tokenIds.slice(2, numBatch + 2),
@@ -213,8 +211,8 @@ describe('deploy contract ' + contractName, () => {
 		console.log('\n\n added these tokens', supportedTokens, '\n\n');
 
 		/// find out how much needed for market storage
-		storageMarket = await contractAccount.viewFunction(marketId, 'storage_amount');
-		console.log('\n\n storageMarket:', storageMarket, '\n\n');
+		storagePerSale = await contractAccount.viewFunction(marketId, 'storage_amount');
+		console.log('\n\n storagePerSale:', storagePerSale, '\n\n');
 	});
 
 	test('contract owner adds packages', async () => {
@@ -281,22 +279,6 @@ describe('deploy contract ' + contractName, () => {
 		expect(tokens.length).toEqual(20);
 	});
 
-	test('contract owner approves batch of tokens for sale on market', async () => {
-		await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS,
-			new BN(storageMarket).mul(new BN(numBatch)).toString()
-		);
-		const result = await contractAccount.functionCall(contractId, 'nft_approve_batch', argsBatchApprove, GAS, parseNearAmount('1'));
-		argsAddSaleBatch.approval_ids = JSON.parse(Buffer.from(result.status.SuccessValue, 'base64').toString('utf-8'))
-		console.log(argsAddSaleBatch)
-		await contractAccount.functionCall(marketId, 'add_sale_batch', argsAddSaleBatch, GAS);
-		const sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_contract_id', {
-			nft_contract_id: contractId,
-			from_index: '0',
-			limit: '100'
-		});
-		expect(sales.length).toEqual(numBatch);
-	});
-
 	test('contract owner tries to mint more than supply', async () => {
 		try {
 			/// fails because of max_supply
@@ -307,10 +289,50 @@ describe('deploy contract ' + contractName, () => {
 		}
 	});
 
+	test('contract owner create_series_and_mint_batch', async () => {
+		await contractAccount.functionCall(contractId, 'create_series_and_mint_batch', reglExample2, GAS, parseNearAmount('1'));
+		const series = await contractAccount.viewFunction(contractId, 'get_series', { name: reglExample2.name });
+		expect(series.src).toEqual(reglExample2.src);
+		const tokens = await contractAccount.viewFunction(contractId, 'nft_tokens_for_series', {
+			series_name: reglExample2.name,
+			from_index: '0',
+			limit: '100',
+		});
+		expect(tokens.length.toString()).toEqual(reglExample2.params.max_supply);
+	});
+
+
+	test('contract owner approve and sell batch', async () => {
+		/// deposit = (storagePerSale * total NFTs) + '0.1' N to cover approval account_ids in the NFT contract
+		const deposit = new BN(storagePerSale)
+			.mul(new BN(reglExample2.params.max_supply))
+			.add(new BN(parseNearAmount('0.1')))
+		.toString()
+
+		const howMany = 17
+		await contractAccount.functionCall(contractId, 'nft_approve_batch', {
+			token_ids: tokenIds2.slice(0, howMany),
+			account_id: marketId,
+			msg: JSON.stringify({
+				token_type: reglExample2.name,
+				sale_conditions: [
+					{ ft_token_id: "near", price: parseNearAmount('1')}
+				]
+			})
+		}, GAS, deposit);
+
+		const sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_token_type', {
+			token_type: reglExample2.name,
+			from_index: '0',
+			limit: '100'
+		});
+
+		expect(sales.length).toEqual(howMany);
+	});
 
 	// test('NFT contract owner mints nft and approves a sale for a fixed amount of NEAR', async () => {
 	// 	const token_id = tokenIds[0];
-	// 	await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS, storageMarket);
+	// 	await contractAccount.functionCall(marketId, 'storage_deposit', {}, GAS, storagePerSale);
 	// 	await contractAccount.functionCall(contractId, 'nft_mint', {
 	// 		token_id,
 	// 		metadata,
@@ -420,7 +442,7 @@ describe('deploy contract ' + contractName, () => {
 	// });
 
 	// test('contract account registers bob with market contract', async () => {
-	// 	await contractAccount.functionCall(marketId, 'storage_deposit', { account_id: bobId }, GAS, storageMarket);
+	// 	await contractAccount.functionCall(marketId, 'storage_deposit', { account_id: bobId }, GAS, storagePerSale);
 	// 	const result = await contractAccount.viewFunction(marketId, 'storage_paid', { account_id: bobId });
 	// 	expect(result).toEqual(parseNearAmount('0.01'));
 	// });
@@ -433,7 +455,7 @@ describe('deploy contract ' + contractName, () => {
 
 	// test('bob approves sale with FT and NEAR (fixed prices)', async () => {
 	// 	const token_id = tokenIds[0];
-	// 	await bob.functionCall(marketId, 'storage_deposit', {}, GAS, storageMarket);
+	// 	await bob.functionCall(marketId, 'storage_deposit', {}, GAS, storagePerSale);
 	// 	await bob.functionCall(stableId, 'storage_deposit', {}, GAS, storageMinimum);
 	// 	const token = await contract.nft_token({ token_id });
 	// 	let sale_conditions = [
@@ -606,7 +628,7 @@ describe('deploy contract ' + contractName, () => {
 
 	// test('bob: nft mint (no type), approve sale with NEAR open for bids', async () => {
 	// 	const token_id = tokenIds[1];
-	// 	await bob.functionCall(marketId, 'storage_deposit', {}, GAS, storageMarket);
+	// 	await bob.functionCall(marketId, 'storage_deposit', {}, GAS, storagePerSale);
 
 	// 	/// bob just double paid for storage (check this)
 	// 	const result = await contractAccount.viewFunction(marketId, 'storage_paid', { account_id: bobId });
@@ -665,7 +687,7 @@ describe('deploy contract ' + contractName, () => {
 
 	// test('alice lingering sale in marketplace', async () => {
 	// 	const token_id = tokenIds[1];
-	// 	await alice.functionCall(marketId, 'storage_deposit', {}, GAS, storageMarket);
+	// 	await alice.functionCall(marketId, 'storage_deposit', {}, GAS, storagePerSale);
 	// 	await alice.functionCall(contractId, 'nft_approve', {
 	// 		token_id,
 	// 		account_id: marketId,

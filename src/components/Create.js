@@ -19,7 +19,7 @@ export const Create = ({ app, update, dispatch, account }) => {
 	const onChange = async (newValue, withPreview) => {
 		dispatch(loadCodeFromSrc('create-preview', code))
 		setCode(newValue);
-		setPreview(withPreview);
+		setPreview(withPreview === true);
 	};
 
 	const { createMenu } = app;
@@ -45,20 +45,35 @@ export const Create = ({ app, update, dispatch, account }) => {
 									].join(''));
 								},
 								'ᐅ Add Owner Param': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
-								'ᐅ Create Series': async () => {
+								'ᐅ Create Series': () => {
 									const { params } = getParams(code);
-									const result = await account.functionCall(contractId, 'create_series', {
-										name: window.prompt('Name of Series?'),
-										params: {
-											max_supply: params.max_supply,
-											enforce_unique_args: true,
-											mint: Object.keys(params.mint),
-											owner: Object.keys(params.owner),
-											packages: params.packages,
-										},
-										src: code,
-									}, GAS, parseNearAmount('0.1'));
-									console.log(result);
+
+									if (window.confirm('Mint the series now?')) {
+										account.functionCall(contractId, 'create_series_and_mint_batch', {
+											name: window.prompt('Name of Series?'),
+											params: {
+												max_supply: params.max_supply,
+												enforce_unique_args: true,
+												mint: Object.keys(params.mint),
+												owner: Object.keys(params.owner),
+												packages: params.packages,
+											},
+											src: code,
+										}, GAS, parseNearAmount('1'));
+									} else {
+										account.functionCall(contractId, 'create_series', {
+											name: window.prompt('Name of Series?'),
+											params: {
+												max_supply: params.max_supply,
+												enforce_unique_args: true,
+												mint: Object.keys(params.mint),
+												owner: Object.keys(params.owner),
+												packages: params.packages,
+											},
+											src: code,
+										}, GAS, parseNearAmount('0.1'));
+									}
+									
 								},
 							}
 						}} />
