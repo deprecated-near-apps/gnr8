@@ -309,7 +309,9 @@ describe('deploy contract ' + contractName, () => {
 			.add(new BN(parseNearAmount('0.1')))
 		.toString()
 
+        /// limited approvals, going to try lazy minting approach
 		const howMany = 17
+
 		await contractAccount.functionCall(contractId, 'nft_approve_batch', {
 			token_ids: tokenIds2.slice(0, howMany),
 			account_id: marketId,
