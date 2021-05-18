@@ -10,13 +10,6 @@ trait NonFungibleTokenApprovalsReceiver {
         approval_id: U64,
         msg: String,
     );
-    fn nft_on_approve_batch(
-        &mut self,
-        token_ids: Vec<TokenId>,
-        owner_id: AccountId,
-        approval_ids: Vec<U64>,
-        msg: String,
-    );
 }
 
 #[near_bindgen]
@@ -126,26 +119,38 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
         }
     }
 
-    #[payable]
-    fn nft_on_approve_batch(
+    
+}
+
+
+
+
+trait NonFungibleSeriesApprovalReceiver {
+    fn series_on_approve(
         &mut self,
-        token_ids: Vec<TokenId>,
+        series_name: String,
         owner_id: AccountId,
-        approval_ids: Vec<U64>,
+        msg: String,
+    );
+}
+
+
+
+#[near_bindgen]
+impl NonFungibleSeriesApprovalReceiver for Contract {
+    /// where we add the sale because we know nft owner can only call nft_approve
+
+    #[payable]
+    fn series_on_approve(
+        &mut self,
+        series_name: String,
+        owner_id: AccountId,
         msg: String,
     ) {
-        let deposit = env::attached_deposit();
-        let mut balance: u128 = self.storage_deposits.get(&owner_id).unwrap_or(0);
-        balance += deposit;
-        self.storage_deposits.insert(&owner_id, &balance);
 
-        self.add_sale_batch_internal(
-            token_ids,
-            env::predecessor_account_id(),
-            approval_ids,
-            msg,
-            owner_id,
-            balance
-        );
+
+        // TODO finish series_on_approve and list sale batch for lazy minting
+        
     }
+
 }

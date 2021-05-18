@@ -1,12 +1,6 @@
 use crate::*;
 use near_sdk::json_types::{ValidAccountId, U64};
-use near_sdk::{ext_contract, log, Gas, PromiseResult};
-
-const GAS_FOR_NFT_APPROVE: Gas = 15_000_000_000_000;
-const GAS_FOR_NFT_APPROVE_BATCH: Gas = 60_000_000_000_000;
-const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
-const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;
-const NO_DEPOSIT: Balance = 0;
+use near_sdk::{ log, PromiseResult};
 
 pub trait NonFungibleTokenCore {
     fn nft_transfer(
@@ -38,8 +32,6 @@ pub trait NonFungibleTokenCore {
 
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>);
 
-    fn nft_approve_batch(&mut self, token_ids: Vec<TokenId>, account_id: ValidAccountId, msg: Option<String>);
-
     fn nft_revoke(&mut self, token_id: TokenId, account_id: ValidAccountId);
 
     fn nft_revoke_all(&mut self, token_id: TokenId);
@@ -68,13 +60,6 @@ trait NonFungibleTokenApprovalsReceiver {
         token_id: TokenId,
         owner_id: AccountId,
         approval_id: U64,
-        msg: String,
-    );
-    fn nft_on_approve_batch(
-        &mut self,
-        token_ids: Vec<TokenId>,
-        owner_id: AccountId,
-        approval_ids: Vec<U64>,
         msg: String,
     );
 }
@@ -291,60 +276,6 @@ impl NonFungibleTokenCore for Contract {
                 env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
             )
             .as_return(); // Returning this promise
-        }
-    }
-
-    /// CUSTOM 
-    #[payable]
-    fn nft_approve_batch(
-        &mut self,
-        token_ids: Vec<TokenId>,
-        account_id: ValidAccountId,
-        msg: Option<String>
-    ) {
-        assert_at_least_one_yocto();
-        let mut storage_used = 0;
-        let account_id: AccountId = account_id.into();
-        let mut approval_ids: Vec<U64> = vec![];
-        let owner_id = env::predecessor_account_id();
-
-        for token_id in token_ids.clone() {
-            let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
-
-            assert_eq!(
-                &owner_id,
-                &token.owner_id,
-                "Predecessor must be the token owner."
-            );
-    
-            let approval_id: U64 = token.next_approval_id.into();
-            let is_new_approval = token
-                .approved_account_ids
-                .insert(account_id.clone(), approval_id)
-                .is_none();
-
-            approval_ids.push(approval_id);
-    
-            storage_used += if is_new_approval {
-                account_id.len() as u64 + 4 + size_of::<u64>() as u64
-            } else {
-                0
-            };
-    
-            token.next_approval_id += 1;
-            self.tokens_by_id.insert(&token_id, &token);
-        }
-    
-        if let Some(msg) = msg.clone() {
-            ext_non_fungible_approval_receiver::nft_on_approve_batch(
-                token_ids,
-                owner_id,
-                approval_ids,
-                msg,
-                &account_id,
-                env::attached_deposit() - env::storage_byte_cost() * Balance::from(storage_used),
-                env::prepaid_gas() - GAS_FOR_NFT_APPROVE_BATCH,
-            );
         }
     }
 
