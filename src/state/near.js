@@ -20,43 +20,10 @@ export const {
 	}
 } = nearAPI;
 
-let successValues = {}
-let approvals = []
-
-export const parseHashes = (hashes) => async ({ update, getState, dispatch }) => {
-	if (!getState()) return
-	const { near } = getState();
-	if (!near?.connection) return
-	hashes.split(',').map(async (hash) => {
-		if (successValues[hash]) return
-		successValues[hash] = near.connection.provider.txStatus(hash, 'si1.testnet').then((result) => {
-			if (result?.status?.SuccessValue === "") return
-			try {
-				const functionCalls = result?.transaction?.actions
-					.filter((obj) => obj.FunctionCall)
-					.map((obj) => obj.FunctionCall)
-				functionCalls.forEach(({ method_name, args }) => {
-					if (method_name !== 'nft_approve_batch') return
-					const approval_ids = successValues[hash] = JSON.parse(atob(result.status.SuccessValue))
-					const { token_ids } = JSON.parse(atob(args))
-					approvals.push({
-						token_ids,
-						nft_contract_id: contractId,
-						approval_ids,
-					})
-				})
-				update('near', { pendingApprovals: approvals })
-			} catch (e) {
-				console.warn(e)
-			}
-		})
-	})
-}
-
 export const initNear = () => async ({ update, getState, dispatch }) => {
 	const { near, wallet, contractAccount } = await getWallet();
 
-	window.near = near
+	window.near = near;
 
 	wallet.signIn = () => {
 		wallet.requestSignIn(contractId, 'Blah Blah');
@@ -87,34 +54,3 @@ export const updateWallet = () => async ({ update, getState }) => {
 	await update('', { wallet });
 };
 
-
-export const token2symbol = {
-	"near": "NEAR",
-	// "dai": "DAI",
-	// "usdc": "USDC",
-	// "usdt": "USDT",
-};
-
-const allTokens = Object.keys(token2symbol);
-
-export const getTokenOptions = (value, setter, accepted = allTokens) => (
-	<select value={value} onChange={(e) => setter(e.target.value)}>
-		{
-			accepted.map((value) => <option key={value} value={value}>{token2symbol[value]}</option>)
-		}
-	</select>);
-
-
-export const handleOffer = async (account, token_id, offerToken, offerPrice) => {
-	if (offerToken !== 'near') {
-		return alert('currently only accepting NEAR offers');
-	}
-	if (offerToken === 'near') {
-		await account.functionCall(marketId, 'offer', {
-			nft_contract_id: contractId,
-			token_id,
-		}, GAS, parseNearAmount(offerPrice));
-	} else {
-		/// todo ft_transfer_call
-	}
-};

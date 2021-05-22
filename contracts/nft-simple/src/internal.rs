@@ -26,7 +26,7 @@ pub(crate) fn assert_at_least_one_yocto() {
     )
 }
 
-pub(crate) fn refund_deposit(storage_used: u64) {
+pub(crate) fn refund_deposit(storage_used: u64, receiver_id: Option<AccountId>) {
     let required_cost = env::storage_byte_cost() * Balance::from(storage_used);
     let attached_deposit = env::attached_deposit();
 
@@ -38,7 +38,7 @@ pub(crate) fn refund_deposit(storage_used: u64) {
 
     let refund = attached_deposit - required_cost;
     if refund > 1 {
-        Promise::new(env::predecessor_account_id()).transfer(refund);
+        Promise::new(receiver_id.unwrap_or_else(env::predecessor_account_id)).transfer(refund);
     }
 }
 

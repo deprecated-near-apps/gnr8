@@ -9,6 +9,21 @@ impl Contract {
     ) -> U64 {
         U64(self.sales.len())
     }
+
+    pub fn get_sales(
+        &self,
+        from_index: U64,
+        limit: U64,
+    ) -> Vec<Sale> {
+        let mut tmp = vec![];
+        let keys = self.sales.keys_as_vector();
+        let start = u64::from(from_index);
+        let end = min(start + u64::from(limit), self.sales.len());
+        for i in start..end {
+            tmp.push(self.sales.get(&keys.get(i).unwrap()).unwrap());
+        }
+        tmp
+    }
     
     pub fn get_supply_by_owner_id(
         &self,
@@ -73,7 +88,7 @@ impl Contract {
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), sales.len());
         for i in start..end {
-            tmp.push(self.sales.get(&format!("{}{}{}", &nft_contract_id, DELIMETER, &keys.get(i).unwrap())).unwrap());
+            tmp.push(self.sales.get(&keys.get(i).unwrap()).unwrap());
         }
         tmp
     }

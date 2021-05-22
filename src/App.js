@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 
 import { appStore, onAppMount } from './state/app';
-import { networkId, parseHashes } from './state/near';
+import { networkId } from './state/near';
 import { useHistory, pathAndArgs } from './utils/history';
 
 import { Menu } from './components/Menu';
@@ -30,10 +30,6 @@ const App = () => {
 		update('app.href', window.location.href);
 	}, true);
 	const { path, args } = pathAndArgs();
-	if (args.transactionHashes) {
-		dispatch(parseHashes(args.transactionHashes))
-	}
-
 
 	const toggleMainMenu = (which) => {
 		update('app.menu', menu === which ? false : which);
@@ -41,7 +37,7 @@ const App = () => {
 		update('app.mintMenu', false);
 	};
 
-	if (!contractAccount) return null
+	if (!contractAccount) return null;
 
 	return <>
 		{ loading && <div className="loading">

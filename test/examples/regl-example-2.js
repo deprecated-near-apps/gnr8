@@ -1,10 +1,10 @@
 const { packages } = require('./packages');
 
 exports.reglExample2 = {
-	name: 'regl-example-2',
+	series_name: 'regl-2-',
 	params: {
 		max_supply: '20',
-    enforce_unique_args: true,
+		enforce_unique_args: true,
 		mint: [
 			'speed'
 		],
@@ -13,13 +13,13 @@ exports.reglExample2 = {
 			packages[1]
 		]
 	},
-  perpetual_royalties: {
-    'md1.testnet': 100,
-    'si1.testnet': 100,
-    'a1.testnet': 100,
-    'a2.testnet': 100,
-    'a3.testnet': 100,
-  },
+	perpetual_royalties: {
+		'md1.testnet': 100,
+		'si1.testnet': 100,
+		'a1.testnet': 100,
+		'a2.testnet': 100,
+		'a3.testnet': 100,
+	},
 	src: `@params
 {
     packages: ['regl@2.1.0'],

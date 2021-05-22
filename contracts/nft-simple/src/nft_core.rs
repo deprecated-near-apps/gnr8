@@ -1,6 +1,4 @@
 use crate::*;
-use near_sdk::json_types::{ValidAccountId, U64};
-use near_sdk::{ log, PromiseResult};
 
 pub trait NonFungibleTokenCore {
     fn nft_transfer(
@@ -18,6 +16,7 @@ pub trait NonFungibleTokenCore {
         approval_id: Option<U64>,
         memo: Option<String>,
         balance: Option<U128>,
+        max_len_payout: Option<u32>,
     ) -> Option<Payout>;
 
     /// Returns `true` if the token was transferred from the sender's account.
@@ -122,45 +121,47 @@ impl NonFungibleTokenCore for Contract {
         approval_id: Option<U64>,
         memo: Option<String>,
         balance: Option<U128>,
+        max_len_payout: Option<u32>,
     ) -> Option<Payout> {
-        assert_one_yocto();
 
+        assert_at_least_one_yocto();
         let sender_id = env::predecessor_account_id();
-        let previous_token = self.internal_transfer(
-            &sender_id,
-            receiver_id.as_ref(),
-            &token_id,
-            approval_id,
-            memo.clone(),
-        );
 
-        let mut token_data = self.token_data_by_id.get(&token_id).expect("No token data");
-        // series restrictions
+        let owner_id: AccountId;
+        let mut token_id = token_id;       
+        let mut approved_account_ids: HashMap<AccountId, U64> = HashMap::new();
+
+        // should mint token from series for specified receiver_id
         if let Some(memo) = memo {
-            let series = self.series_by_name.get(&token_data.series_args.name)
-                .unwrap_or_else(|| panic!("No series {}", token_data.series_args.name));
-            let SeriesArgs {
-                name,
-                mint,
-                owner: _,
-            } = near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesArgs");
-            assert_eq!(name, token_data.series_args.name, "SeriesArgs name doesn't match");
-            assert!(token_data.series_args.mint.is_empty(), "Token already has mint args set");
-            if series.params.enforce_unique_args {
-                let series_arg_hash = hash_account_id(&format!("{}{}", name, mint.join("")));
-                assert!(self.series_arg_hashes.insert(&series_arg_hash), "Token in series has identical args");
-            }
-            // update token
-            token_data.series_args.mint = mint;
-            self.token_data_by_id.insert(&token_id, &token_data);
-        }
-
+            let series_mint_args: SeriesMintArgs = near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesMintArgs");
+            let (new_token_id, series_owner_id) = self.nft_mint(series_mint_args, Some(true));
+            owner_id = series_owner_id;
+            token_id = new_token_id;
+        } else {
+            let previous_token = self.internal_transfer(
+                &sender_id,
+                receiver_id.as_ref(),
+                &token_id,
+                approval_id,
+                memo.clone(),
+            );
+            owner_id = previous_token.owner_id;
+            approved_account_ids = previous_token.approved_account_ids;
+        };
+        
+        let token_data = self.token_data_by_id.get(&token_id).expect("No token data");
+        
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
-        let owner_id = previous_token.owner_id.clone();
-        let royalty = self.token_data_by_id.get(&token_id).expect("No token").royalty;
+        
         let mut total_perpetual = 0;
         let payout = if let Some(balance) = balance {
+            let royalty = token_data.royalty;
+
+            if let Some(max_len_payout) = max_len_payout {
+                assert!(royalty.len() as u32 <= max_len_payout, "Market cannot payout to that many receivers");
+            }
+
             let balance_u128 = u128::from(balance);
             let mut payout: Payout = HashMap::new();
             for (k, v) in royalty.iter() {
@@ -177,7 +178,7 @@ impl NonFungibleTokenCore for Contract {
             }
             assert!(total_perpetual <= MINTER_ROYALTY_CAP + CONTRACT_ROYALTY_CAP, "Royalties should not be more than caps");
             // payout to previous owner
-            payout.insert(owner_id, royalty_to_payout(10000 - total_perpetual, balance_u128));
+            payout.insert(owner_id.clone(), royalty_to_payout(10000 - total_perpetual, balance_u128));
 
             env::log(format!("total_perpetual {:?}", total_perpetual).as_bytes());
             env::log(format!("Payouts {:?}", payout).as_bytes());
@@ -189,8 +190,8 @@ impl NonFungibleTokenCore for Contract {
 
         // refund any NEAR if storage reqs changed
         refund_approved_account_ids(
-            previous_token.owner_id,
-            &previous_token.approved_account_ids,
+            owner_id,
+            &approved_account_ids,
         );
 
         payout
@@ -263,7 +264,7 @@ impl NonFungibleTokenCore for Contract {
         token.next_approval_id += 1;
         self.tokens_by_id.insert(&token_id, &token);
 
-        refund_deposit(storage_used);
+        refund_deposit(storage_used, None);
 
         if let Some(msg) = msg {
             ext_non_fungible_approval_receiver::nft_on_approve(

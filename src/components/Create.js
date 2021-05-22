@@ -1,25 +1,70 @@
 import React, { useEffect, useState } from 'react';
+import {get, set, del} from '../utils/storage';
 import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-jsx";
+import "ace-builds/src-noconflict/mode-markdown";
 import "ace-builds/src-noconflict/mode-javascript";
-import "ace-builds/src-noconflict/theme-github";
-import { GAS, contractId, parseNearAmount } from '../state/near';
+import "ace-builds/src-noconflict/theme-chrome";
+import "ace-builds/src-min-noconflict/ext-searchbox";
+import "ace-builds/src-min-noconflict/ext-language_tools";
+import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { Menu } from './Menu';
 import { reglExample } from '../../test/examples/regl-example';
+import { three1 } from '../../test/examples/three-1';
+import { three2 } from '../../test/examples/three-2';
+import { three3 } from '../../test/examples/three-3';
+
+const examples = [
+	reglExample,
+	three1,
+	three2,
+	three3,
+];
+
+const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE';
 
 export const Create = ({ app, update, dispatch, account }) => {
 
 	const [preview, setPreview] = useState(false);
-	const [code, setCode] = useState(reglExample.src);
+	const [code, setCode] = useState();
+	const [editor, setEditor] = useState();
 
 	useEffect(() => {
-		onChange(reglExample.src, true);
+		onChange(three3.src, true);
+		checkSeriesUpdate();
 	}, []);
 
-	const onChange = async (newValue, withPreview) => {
-		dispatch(loadCodeFromSrc('create-preview', code))
+	const checkSeriesUpdate = async() => {
+		const {series_name, src, attempts} = get(PENDING_SERIES_UPDATE + account.accountId);
+		if (series_name) {
+			const data = await account.viewFunction(contractId, 'series_data', { series_name }, GAS);
+			if (data.src === src) {
+				return del(PENDING_SERIES_UPDATE + account.accountId);
+			}
+			const result = await account.functionCall(contractId, 'series_update', { series_name, src }, GAS);
+			console.log('series updated', result);
+		}
+	};
+
+	const resize = (editor) => {
+		if (!editor) return;
+		setTimeout(() => {
+			editor.resize();
+			editor.renderer.updateFull();
+		}, 250);
+	};
+
+	const onLoad = (editor) => {
+		setEditor(editor);
+		resize(editor);
+	};
+
+	const onChange = async (newValue, showPreview) => {
+		dispatch(loadCodeFromSrc('create-preview', newValue));
 		setCode(newValue);
-		setPreview(withPreview === true);
+		setPreview(preview || showPreview === true);
+		resize(editor);
 	};
 
 	const { createMenu } = app;
@@ -29,7 +74,10 @@ export const Create = ({ app, update, dispatch, account }) => {
 			<div className="menu no-barcode">
 				<div className="bar">
 					<div onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</div>
-					<div onClick={() => setPreview(!preview)}>Preview</div>
+					<div onClick={() => {
+						setPreview(!preview);
+						resize(editor);
+					}}>Preview</div>
 				</div>
 				{
 					createMenu === 'left' && <div className="sub below">
@@ -48,9 +96,16 @@ export const Create = ({ app, update, dispatch, account }) => {
 								'ᐅ Create Series': () => {
 									const { params } = getParams(code);
 
-									if (window.confirm('Mint the series now?')) {
-										account.functionCall(contractId, 'create_series_and_mint_batch', {
-											name: window.prompt('Name of Series?'),
+									const series_name = window.prompt('Name of Series?');
+									const sellNow = window.confirm('Sell series now?');
+									const price = window.prompt('What price in NEAR?');
+
+									set(PENDING_SERIES_UPDATE + account.accountId, { series_name, src: code, attempts: 0 });
+
+									if (sellNow) {
+										account.functionCall(contractId, 'series_create_and_approve', {
+											series_name,
+											bytes: code.length.toString(),
 											params: {
 												max_supply: params.max_supply,
 												enforce_unique_args: true,
@@ -58,11 +113,17 @@ export const Create = ({ app, update, dispatch, account }) => {
 												owner: Object.keys(params.owner),
 												packages: params.packages,
 											},
-											src: code,
+											account_id: marketId,
+											msg: JSON.stringify({
+												sale_conditions: [
+													{ ft_token_id: "near", price: parseNearAmount(price)}
+												]
+											})
 										}, GAS, parseNearAmount('1'));
 									} else {
-										account.functionCall(contractId, 'create_series', {
-											name: window.prompt('Name of Series?'),
+										account.functionCall(contractId, 'series_create', {
+											series_name,
+											bytes: code.length.toString(),
 											params: {
 												max_supply: params.max_supply,
 												enforce_unique_args: true,
@@ -70,8 +131,7 @@ export const Create = ({ app, update, dispatch, account }) => {
 												owner: Object.keys(params.owner),
 												packages: params.packages,
 											},
-											src: code,
-										}, GAS, parseNearAmount('0.1'));
+										}, GAS, parseNearAmount('1'));
 									}
 									
 								},
@@ -83,17 +143,24 @@ export const Create = ({ app, update, dispatch, account }) => {
 
 			<div className={preview ? 'editor preview' : 'editor'}>
 				<AceEditor
-					mode="javascript"
-					theme="github"
+					mode="jsx"
+					theme="chrome"
 					value={code}
-					onChange={onChange}
 					name="ace-editor"
 					width="100%"
 					height="100%"
 					fontSize="0.8rem"
+					debounceChangePeriod={100}
 					editorProps={{
 						$blockScrolling: true,
 					}}
+					setOptions={{
+						useWorker: false,
+						showLineNumbers: true,
+						tabSize: 4
+					}}
+					onChange={onChange}
+					onLoad={onLoad}
 				/>
 			</div>
 

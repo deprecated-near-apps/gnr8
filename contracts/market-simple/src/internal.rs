@@ -35,7 +35,7 @@ impl Contract {
             .by_nft_contract_id
             .get(&nft_contract_id)
             .expect("No sale by nft_contract_id");
-        by_nft_contract_id.remove(&token_id);
+        by_nft_contract_id.remove(&contract_and_token_id);
         if by_nft_contract_id.is_empty() {
             self.by_nft_contract_id.remove(&nft_contract_id);
         } else {

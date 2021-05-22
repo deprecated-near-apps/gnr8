@@ -1,7 +1,7 @@
 const { packages } = require('./packages');
 
-exports.reglExample = {
-	series_name: 'regl-1-',
+exports.regl4 = {
+	series_name: 'regl-4-',
 	params: {
 		max_supply: '2',
 		enforce_unique_args: true,
@@ -33,6 +33,22 @@ exports.reglExample = {
     }
 }
 @params
+
+@css
+::-webkit-scrollbar {
+    display: none;
+}
+.test {
+    color: white;
+}
+canvas {
+    margin-top: 100px !important;
+}
+@css
+
+@html
+<div class="test"><h1>Test</h1></div>
+@html
 
 @js
 const color = {{backgroundColor}}

@@ -32,6 +32,12 @@ pub struct SaleArgs {
     pub token_type: TokenType,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SeriesSaleArgs {
+    pub sale_conditions: Vec<Price>,
+}
+
 const NO_DEPOSIT: Balance = 0;
 const STORAGE_PER_SALE: u128 = 1000 * STORAGE_PRICE_PER_BYTE;
 static DELIMETER: &str = "||";
@@ -49,8 +55,8 @@ pub struct Contract {
     pub owner_id: AccountId,
     pub sales: UnorderedMap<ContractAndTokenId, Sale>,
     pub by_owner_id: LookupMap<AccountId, UnorderedSet<ContractAndTokenId>>,
-    pub by_nft_contract_id: LookupMap<AccountId, UnorderedSet<TokenId>>,
-    pub by_nft_token_type: LookupMap<AccountId, UnorderedSet<TokenId>>,
+    pub by_nft_contract_id: LookupMap<AccountId, UnorderedSet<ContractAndTokenId>>,
+    pub by_nft_token_type: LookupMap<AccountId, UnorderedSet<ContractAndTokenId>>,
     pub ft_token_ids: UnorderedSet<AccountId>,
     pub storage_deposits: LookupMap<AccountId, Balance>,
 }
@@ -107,7 +113,7 @@ impl Contract {
     /// TODO remove token (should check if sales can complete even if owner stops supporting token type)
 
     #[payable]
-    pub fn storage_deposit(&mut self, account_id: Option<AccountId>) {
+    pub fn storage_deposit(&mut self, account_id: Option<ValidAccountId>) {
         let storage_account_id = account_id
             .map(|a| a.into())
             .unwrap_or_else(env::predecessor_account_id);

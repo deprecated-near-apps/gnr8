@@ -4,36 +4,38 @@ import { loadCodeFromSrc } from '../state/code';
 
 export const Market = ({ dispatch, views }) => {
 
-	const { everything } = views
+	const { everything } = views;
 
-	console.log(everything)
+	console.log(everything);
 	
 	useEffect(() => {
-		dispatch(loadEverything())
-	}, [])
+		dispatch(loadEverything());
+	}, []);
 
 	useEffect(() => {
-		if (!everything.length) return
+		if (!everything.length) return;
 		everything.forEach(({ codeId, codeSrc, series_args }) => {
-			dispatch(loadCodeFromSrc(codeId, codeSrc, series_args))
-		})
-	}, [everything.length])
+			dispatch(loadCodeFromSrc(codeId, codeSrc, series_args));
+		});
+	}, [everything.length]);
 
 	return <>
 		<div className="gallery">
 			{
-				everything.map(({ codeId, owner_id, params, sales }) => 
-				<div key={codeId} className="iframe">
-					<iframe {...{ id: codeId }} />
-					<div onClick={() => params ? history.push('/mint/' + codeId) : history.push('/token/' + codeId)}>
-						<div>{codeId}</div>
-						<div>{owner_id}</div>
-					</div>
-					{ params && <div>
-						<div>{sales.length} / {params.max_supply} Left</div>
-						{sales.length && <div onClick={() => history.push('/mint/' + codeId)}>Mint</div>}
-					</div> }
-				</div>)
+				everything.map(({ codeId, owner_id, params, sales = [], claimed = 0 }) => 
+					<div key={codeId} className="iframe">
+						<iframe {...{ id: codeId }} />
+						<div onClick={() => params ? history.push('/mint/' + codeId) : history.push('/token/' + codeId)}>
+							<div>{codeId}</div>
+							<div>{owner_id}</div>
+						</div>
+						{ params && sales.length === 1 && <div>
+							<div>{claimed} / {params.max_supply} Claimed</div>
+							{claimed < params.max_supply && 
+							<div onClick={() => history.push('/mint/' + codeId)}>Mint</div>
+							}
+						</div> }
+					</div>)
 			}
 		</div>
 	</>;

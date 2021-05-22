@@ -1,9 +1,9 @@
 const { packages } = require('./packages');
 
-exports.reglExample = {
-	series_name: 'regl-1-',
+exports.regl3 = {
+	series_name: 'regl-3-',
 	params: {
-		max_supply: '2',
+		max_supply: '1000',
 		enforce_unique_args: true,
 		mint: [
 			'backgroundColor'
@@ -18,7 +18,7 @@ exports.reglExample = {
 	src: `@params
 {
     packages: ['regl@2.1.0'],
-    max_supply: '2',
+    max_supply: '1000',
     mint: {
         backgroundColor: {
             default: [0, 0, 0, 1],
@@ -34,7 +34,6 @@ exports.reglExample = {
 }
 @params
 
-@js
 const color = {{backgroundColor}}
 const angleSpeed = {{angleSpeed}}
 
@@ -107,7 +106,5 @@ regl.frame(function () {
         { offset: [1, 0] },
         { offset: [1, 1] }
     ])
-})
-@js
-`,
+})`,
 };

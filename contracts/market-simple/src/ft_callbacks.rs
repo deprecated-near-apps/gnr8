@@ -32,6 +32,7 @@ impl FungibleTokenReceiver for Contract {
 
         if amount == price {
             self.process_purchase(
+                sale,
                 nft_contract_id.into(),
                 token_id,
                 ft_token_id,

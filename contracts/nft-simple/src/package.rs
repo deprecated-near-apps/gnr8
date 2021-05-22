@@ -35,7 +35,7 @@ impl Contract {
         });
 
         let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
-        refund_deposit(required_storage_in_bytes);
+        refund_deposit(required_storage_in_bytes, None);
     }
 
     #[payable]
@@ -51,7 +51,7 @@ impl Contract {
         package.urls.extend(urls);
 
         let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
-        refund_deposit(required_storage_in_bytes);
+        refund_deposit(required_storage_in_bytes, None);
     }
 
     /// views

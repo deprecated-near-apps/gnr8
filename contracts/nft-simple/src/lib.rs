@@ -8,6 +8,7 @@ use near_sdk::json_types::{Base64VecU8, ValidAccountId, U64, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     ext_contract,
+    PromiseResult,
     log, env, near_bindgen, AccountId, Balance, Gas, CryptoHash, PanicOnDefault, Promise, StorageUsage,
 };
 
@@ -38,7 +39,7 @@ pub type TypeSupplyCaps = HashMap<TokenType, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
 static SERIES_VARIANT_DELIMETER: &str = ":";
-const GAS_FOR_SERIES_APPROVE: Gas = 15_000_000_000_000;
+const GAS_FOR_SERIES_APPROVE: Gas = 20_000_000_000_000;
 const GAS_FOR_NFT_APPROVE: Gas = 10_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
 const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;

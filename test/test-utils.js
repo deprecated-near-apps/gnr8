@@ -35,6 +35,7 @@ async function initContract() {
 	return { contract, contractName };
 }
 const getAccountBalance = async (accountId) => (new nearAPI.Account(connection, accountId)).getAccountBalance();
+const getAccountBytes = async (accountId) => (await (new nearAPI.Account(connection, accountId)).state()).storage_usage;
 
 const createOrInitAccount = async(accountId, secret) => {
 	let account;
@@ -139,6 +140,7 @@ module.exports = {
 	keyStore,
 	getContract,
 	getAccountBalance,
+	getAccountBytes,
 	contract,
 	contractName,
 	contractMethods,

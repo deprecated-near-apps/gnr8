@@ -3,7 +3,7 @@ const { sha256 } = require('js-sha256');
 
 const packages = [
 	'three.js@r128',
-	'regl@2.1.0'
+	'regl@2.1.0',
 ];
 
 exports.packages = packages;
@@ -12,7 +12,6 @@ exports.getPackages = async () => {
 
 	const threeUrls = [
 		'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-		'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'
 	];
 	const three = {
 		name_version: packages[0],
@@ -30,6 +29,6 @@ exports.getPackages = async () => {
 	};
 
 	return {
-		regl, three
+		regl, three,
 	};
 };

@@ -4,32 +4,34 @@ import { loadCodeFromSrc } from '../state/code';
 
 export const Series = ({ dispatch, views, account }) => {
 
-	const { series } = views
+	const { series } = views;
 
 	useEffect(() => {
-		dispatch(loadSeriesRange())
-	}, [])
+		dispatch(loadSeriesRange());
+	}, []);
 
 	useEffect(() => {
-		if (!series.length) return
-		series.forEach(({ codeId, codeSrc }) => dispatch(loadCodeFromSrc(codeId, codeSrc)))
-	}, [series.length])
+		if (!series.length) return;
+		series.forEach(({ codeId, codeSrc }) => dispatch(loadCodeFromSrc(codeId, codeSrc)));
+	}, [series.length]);
 
 	return <>
 		<div className="gallery">
 			{
-				series.map(({ codeId, owner_id, params, sales }) => 
-				<div key={codeId} className="iframe">
-					<iframe {...{ id: codeId }} />
-					<div onClick={() => history.push('/token/' + codeId)}>
-						<div>{codeId}</div>
-						<div>{owner_id}</div>
-					</div>
-					{ params && <div>
-						<div>{sales.length} / {params.max_supply} Left</div>
-						{!!sales.length && <div onClick={() => history.push('/mint/' + codeId)}>Mint</div>}
-					</div> }
-				</div>)
+				series.map(({ codeId, owner_id, params, sales = [], claimed = 0 }) => 
+					<div key={codeId} className="iframe">
+						<iframe {...{ id: codeId }} />
+						<div onClick={() => history.push('/token/' + codeId)}>
+							<div>{codeId}</div>
+							<div>{owner_id}</div>
+						</div>
+						{ params && sales.length === 1 && <div>
+							<div>{claimed} / {params.max_supply} Claimed</div>
+							{claimed < params.max_supply && 
+							<div onClick={() => history.push('/mint/' + codeId)}>Mint</div>
+							}
+						</div> }
+					</div>)
 			}
 		</div>
 	</>;
