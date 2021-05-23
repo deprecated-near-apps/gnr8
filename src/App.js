@@ -83,7 +83,7 @@ const App = () => {
 			{ path === '/' && <Market {...{ dispatch, views }} /> }
 			{ path === '/series' && <Series {...{ dispatch, views, args }} /> }
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
-			{ path === '/create' && <Create {...{ app, update, dispatch, account }} /> }
+			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }
 			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
 			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }
 		</section>

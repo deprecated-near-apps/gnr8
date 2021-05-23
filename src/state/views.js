@@ -1,5 +1,14 @@
 import { marketId, contractId } from './near';
 
+export const getPackageRange = (from_index = '0', limit = '100') => async ({ getState, update }) => {
+	const { contractAccount } = getState();
+	const packages = await contractAccount.viewFunction(contractId, 'get_package_range', {
+		from_index,
+		limit,
+	});
+	update('views', { packages });
+};
+
 export const getTokensForSeries = (series_name) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	return await contractAccount.viewFunction(contractId, 'nft_tokens_for_series', {

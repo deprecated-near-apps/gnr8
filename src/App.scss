@@ -118,7 +118,7 @@ section {
         width: 100%;
         height: calc(100vh - 4rem);
         &.preview {
-            height: calc(50vh - 2rem);
+            height: calc(50vh - 4rem);
         }
     }
     .iframe {
@@ -128,7 +128,7 @@ section {
             border: none;
             width: 100%;
             max-width: 50vh;
-            height: calc(50vh - 2rem);
+            height: calc(50vh - 2.5rem);
         }
         &.display-none {
             display: none;

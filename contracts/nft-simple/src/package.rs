@@ -4,9 +4,15 @@ static PACKAGE_NAME_VERSION_DELIMETER: &str = "@";
 pub type PackageNameVersion = String;
 
 #[derive(BorshDeserialize, BorshSerialize)]
+pub struct Package {
+    pub src_hash: String,
+    pub urls: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Package {
+pub struct PackageJson {
+    pub name_version: PackageNameVersion,
     pub src_hash: String,
     pub urls: Vec<String>,
 }
@@ -59,22 +65,39 @@ impl Contract {
     pub fn get_package(
         &self,
         name_version: PackageNameVersion,
-    ) -> Package {
-        self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version))
+    ) -> PackageJson {
+        let Package {
+            src_hash,
+            urls,
+        } = self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version));
+        PackageJson{
+            name_version,
+            src_hash,
+            urls,
+        }
     }
 
     pub fn get_package_range(
         &self,
         from_index: U64,
         limit: U64,
-    ) -> Vec<Package> {
+    ) -> Vec<PackageJson> {
 
         let mut tmp = vec![];
         let keys = self.packages_by_name_version.keys_as_vector();
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         for i in start..end {
-            tmp.push(self.packages_by_name_version.get(&keys.get(i).unwrap()).unwrap());
+            let name_version = keys.get(i).unwrap();
+            let Package {
+                src_hash,
+                urls,
+            } = self.packages_by_name_version.get(&name_version).unwrap();
+            tmp.push(PackageJson{
+                name_version,
+                src_hash,
+                urls,
+            });
         }
         tmp
     }

@@ -110,6 +110,17 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 							<span>{name}</span>
 
 							{
+								type.indexOf('int') > -1 &&
+								<input type="number" onChange={(e) => {
+									const newArgs = { ...args, [name]: e.target.value };
+									setState({ ...state, args: newArgs });
+									let newCode = series.src;
+									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+									dispatch(loadCodeFromSrc('mint-preview', newCode));
+								}} />
+							}
+
+							{
 								type.indexOf('rgba-color') > -1 &&
 								<input type="color" onChange={(e) => {
 									const color = hexToRgb(e.target.value, false, true);

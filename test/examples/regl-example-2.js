@@ -9,9 +9,7 @@ exports.reglExample2 = {
 			'speed'
 		],
 		owner: [],
-		packages: [
-			packages[1]
-		]
+		packages: ['regl@2.1.0']
 	},
 	perpetual_royalties: {
 		'md1.testnet': 100,

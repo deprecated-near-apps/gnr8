@@ -85,7 +85,7 @@ impl Contract {
 
         series.approved_account_ids.insert(account_id.as_ref());
 
-        let storage_used = env::storage_usage() - initial_storage_usage;
+        let storage_used = bytes.0 + env::storage_usage() - initial_storage_usage;
 
         if let Some(msg) = msg {
             ext_non_fungible_series_approval_receiver::series_on_approve(
@@ -112,7 +112,7 @@ impl Contract {
 
         self.series_create_internal(series_name, bytes, params, royalty);
 
-        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
+        let required_storage_in_bytes = bytes.0 + env::storage_usage() - initial_storage_usage;
         refund_deposit(required_storage_in_bytes, None);
     }
 
@@ -125,11 +125,11 @@ impl Contract {
     ) {
         let owner_id = env::predecessor_account_id();
 
-        self.series_by_name.insert(&series_name, &Series {
+        assert!(self.series_by_name.insert(&series_name, &Series {
             series_name: series_name.clone(),
             src: "".to_string(),
             bytes,
-            royalty: royalty.unwrap_or(HashMap::new()),
+            royalty: royalty.unwrap_or_default(),
             owner_id: owner_id.clone(),
             issued_at: env::block_timestamp().into(),
             params,
@@ -140,7 +140,7 @@ impl Contract {
                 .try_to_vec()
                 .unwrap(),
             )
-        });
+        }).is_none(), "Series with this name already exists");
 
         let mut series_per_owner = self.series_per_owner
             .get(&owner_id)

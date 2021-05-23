@@ -148,15 +148,10 @@ describe('deploy contract ' + contractName, () => {
 
 
 	test('contract owner adds packages', async () => {
-		const { three, regl } = await getPackages();
+		const { three, regl, p5 } = await getPackages();
+		await contractAccount.functionCall(contractId, 'add_package', p5, GAS, parseNearAmount('1'));
 		await contractAccount.functionCall(contractId, 'add_package', three, GAS, parseNearAmount('1'));
-		/// add mirrors
-		// delete three.src_hash
-		// three.urls = ['https://cdn.jsdelivr.net/npm/three.js@r128/build/three.min.js']
-		// await contractAccount.functionCall(contractId, 'add_mirrors', three, GAS, parseNearAmount('1'));
 		await contractAccount.functionCall(contractId, 'add_package', regl, GAS, parseNearAmount('1'));
-		const getThree = await contractAccount.viewFunction(contractId, 'get_package', { name_version: three.name_version });
-		expect(getThree.src_hash).toEqual(three.src_hash);
 		const getRegl = await contractAccount.viewFunction(contractId, 'get_package', { name_version: regl.name_version });
 		expect(getRegl.src_hash).toEqual(regl.src_hash);
 	});

@@ -26,10 +26,19 @@ export const Menu = ({ app, menuKey, update, options = {} }) => {
 		}}>✕</div>
 		{
 			Object.entries(options).map(([k, v]) => 
-				<div key={k} className="item" onClick={() => {
-					v();
+				<div key={k} className="item" onClick={(e) => {
+					if (v.frag) return
+					if (typeof v === 'object') {
+						if (v.close) update('app.' + menuKey, false);
+						return v.fn(e);
+					}
+					v(e)
 					update('app.' + menuKey, false);
-				}}>{k}</div>	
+				}}>
+					{k}
+					&nbsp;
+					{ typeof v === 'object' && v.frag }
+				</div>	
 			)
 		}
 	</div>;

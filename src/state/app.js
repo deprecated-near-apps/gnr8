@@ -20,6 +20,7 @@ const initialState = {
 		tokens: [],
 		sales: [],
 		series: [],
+		packages: [],
 	}
 };
 

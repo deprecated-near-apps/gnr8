@@ -11,9 +11,7 @@ exports.reglExample = {
 		owner: [
 			'angleSpeed'
 		],
-		packages: [
-			packages[1]
-		]
+		packages: ['regl@2.1.0']
 	},
 	src: `@params
 {
