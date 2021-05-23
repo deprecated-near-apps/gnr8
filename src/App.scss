@@ -1,6 +1,10 @@
 
 $margin: 1rem;
 
+::-webkit-scrollbar {
+    width: 0;
+}
+
 * {
     box-sizing: border-box;
     user-select: none;
@@ -10,10 +14,6 @@ $margin: 1rem;
 html {
     overflow: hidden;
     font-size: 1rem;
-}
-
-body::-webkit-scrollbar {
-    width: 0;
 }
 
 body {
@@ -89,13 +89,18 @@ body {
             display: inline-block;
             cursor: pointer;
         }
-    }
-    .sub .right {
-        text-align: right;
-    }
-    .sub.below {
-        z-index: 9999;
-        padding-top: 0;
+        > div {
+            height: calc(100vh - 5rem);
+            overflow: scroll;
+        }
+        &.below {
+            z-index: 9999;
+            padding-top: 0;
+            height: calc(100vh - 5rem);
+        }
+        > .right {
+            text-align: right;
+        }
     }
 }
 
@@ -113,35 +118,40 @@ section {
     }
 }
 
-.create, .mint {
+.create {
     .editor {
         width: 100%;
-        height: calc(100vh - 4rem);
+        height: calc(100vh - 6rem);
         &.preview {
-            height: calc(50vh - 4rem);
+            height: calc(50vh - 3rem);
+
         }
     }
-    .iframe {
+    .iframe, .iframe iframe  {
         overflow: hidden;
         text-align: center;
-        iframe {
-            border: none;
-            width: 100%;
-            max-width: 50vh;
-            height: calc(50vh - 2.5rem);
-        }
+        margin: auto;
+        border: none;
+        width: 100%;
+        max-width: 50vh;
+        height: calc(50vh - 3rem);
+        
+    }
+    .iframe {
+        border-top: 1px solid black;
         &.display-none {
             display: none;
         }
     }
-    .mint-params {
-        text-align: center;
-        > div {
-            > span {
-                margin-right: 1rem;
-            }
-            padding: 1rem;
+}
+
+.mint-params, .owner-params {
+    text-align: center;
+    > div {
+        > span {
+            margin-right: 1rem;
         }
+        padding: 1rem;
     }
 }
 
@@ -210,6 +220,16 @@ section {
         width: 33.33vw;
         height: 33.33vw;
     }
+}
+
+input {
+    height: 2rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    padding: 0.5rem;
+    border: none;
+    outline: none;
+    width: 200px;
 }
 
 

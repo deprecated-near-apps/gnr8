@@ -29,7 +29,7 @@ const App = () => {
 		toggleMainMenu(false);
 		update('app.href', window.location.href);
 	}, true);
-	const { path, args } = pathAndArgs();
+	const { path, pathParts, args } = pathAndArgs();
 
 	const toggleMainMenu = (which) => {
 		update('app.menu', menu === which ? false : which);
@@ -63,7 +63,7 @@ const App = () => {
 				<div className="sub">
 					{menu === 'left' && <Menu {...{
 						app, menuKey: 'menu', update, options: {
-							'ᐅ Sign Out': () => wallet.signOut()
+							'▷ Sign Out': () => wallet.signOut()
 						}
 					}} />}
 					{menu === 'right' && <Menu {...{
@@ -85,7 +85,7 @@ const App = () => {
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }
 			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
-			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }
+			{ path.substr(0, 6) === '/token' && <Token {...{ app, pathParts, views, update, dispatch, account }} /> }
 		</section>
 
 	</>;

@@ -54,10 +54,11 @@ function setup() {
     randomSeed(seed);
     frameRate(speed);
     createCanvas(width, height);
-    w = 20;
+    w = width / 50;
+    h = height / 50;
     // Calculate columns and rows
     columns = floor(width / w);
-    rows = floor(height / w);
+    rows = floor(height / h) + 1;
     // Wacky way to make a 2D array is JS
     board = new Array(columns);
     for (let i = 0; i < columns; i++) {
@@ -78,8 +79,8 @@ function draw() {
     for ( let j = 0; j < rows;j++) {
       if ((board[i][j] == 1)) fill(0);
       else fill(255);
-      stroke(0);
-      rect(i * w, j * w, w-1, w-1);
+      stroke(255);
+      rect(i * w, j * h, w-1, h-1);
     }
   }
 

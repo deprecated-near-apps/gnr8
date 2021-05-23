@@ -37,7 +37,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const [preview, setPreview] = useState(false);
 	const [code, setCode] = useState();
 	const [editor, setEditor] = useState();
-	const [showPackages, setShowPackages] = useState(true);
+	const [showPackages, setShowPackages] = useState(false);
 	const [packageFilter, setPackageFilter] = useState('');
 
 	useEffect(() => {
@@ -107,13 +107,13 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i))
 
 	const options = {
-		[showPackages ? 'ᐅ Hide Packages' : 'ᐅ Show Packages']: {
+		[showPackages ? '▽ Hide Packages' : '▷ Show Packages']: {
 			fn: () => { setShowPackages(!showPackages) },
 			close: false
 		},
 		...(showPackages ? packageMenu : {}),
-		'ᐅ Max Supply': () => setCode(code.replace(/max_supply:.*,/g, `max_supply: '${window.prompt('What should the max supply be?')}',`)),
-		'ᐅ Add Mint Param': () => {
+		'▷ Max Supply': () => setCode(code.replace(/max_supply:.*,/g, `max_supply: '${window.prompt('What should the max supply be?')}',`)),
+		'▷ Add Mint Parameter': () => {
 			const index = code.indexOf('mint: {') + 'mint: {'.length;
 			setCode([
 				code.slice(0, index),
@@ -121,8 +121,8 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 				code.slice(index)
 			].join(''));
 		},
-		'ᐅ Add Owner Param': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
-		'ᐅ Create Series': () => {
+		'▷ Add Owner Parameter': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
+		'▷ Create Series': () => {
 			const { params } = getParams(code);
 
 			const series_name = window.prompt('Name of Series?');

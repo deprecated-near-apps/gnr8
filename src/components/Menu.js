@@ -1,19 +1,4 @@
-import React, { useEffect, useState } from 'react';
-
-import * as nearAPI from 'near-api-js';
-import { updateWallet } from '../state/near';
-import {
-	getContract,
-	contractMethods,
-	GAS
-} from '../utils/near-utils';
-const {
-	KeyPair,
-	utils: { PublicKey,
-		format: {
-			formatNearAmount
-		} }
-} = nearAPI;
+import React from 'react';
 
 export const Menu = ({ app, menuKey, update, options = {} }) => {
 	if (!Object.keys(options).length) {
@@ -27,8 +12,8 @@ export const Menu = ({ app, menuKey, update, options = {} }) => {
 		{
 			Object.entries(options).map(([k, v]) => 
 				<div key={k} className="item" onClick={(e) => {
-					if (v.frag) return
 					if (typeof v === 'object') {
+						if (!v.fn) return
 						if (v.close) update('app.' + menuKey, false);
 						return v.fn(e);
 					}

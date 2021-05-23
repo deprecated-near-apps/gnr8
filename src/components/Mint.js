@@ -5,6 +5,7 @@ import { loadCodeFromSrc, getParams } from '../state/code';
 import { loadSales, getTokensForSeries } from '../state/views';
 import { hexToRgb } from '../utils/color';
 import { Menu } from './Menu';
+import { Frame } from './Frame';
 
 export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
@@ -23,7 +24,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		const series = salesBySeries.find(({ series_name }) => series_name === seriesName);
 		const sale = series.sales.find(({ token_type }) => seriesName === token_type);
 		setState({ series, sale, args: {} });
-		dispatch(loadCodeFromSrc('mint-preview', series.src));
+		dispatch(loadCodeFromSrc(series.series_name, series.src));
 	}, [salesBySeries]);
 
 	const handleOffer = async () => {
@@ -69,7 +70,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 				setState({ ...state, args: newArgs });
 				let newCode = series.src;
 				Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-				dispatch(loadCodeFromSrc('mint-preview', newCode));
+				dispatch(loadCodeFromSrc(series.series_name, newCode));
 			};
 
 			params.push({
@@ -78,6 +79,17 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 				type: v.type
 			});
 		});
+	} else {
+		return null
+	}
+
+	const updateArgs = (name, value) => {
+		if (!value.length) return
+		const newArgs = { ...args, [name]: value };
+		setState({ ...state, args: newArgs });
+		let newCode = series.src;
+		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+		dispatch(loadCodeFromSrc(series.series_name, newCode));
 	}
 
 	return <>
@@ -96,10 +108,8 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 				}
 			</div>
 
-			<div className="iframe">
-				<iframe {...{
-					id: 'mint-preview',
-				}} />
+			<div className="gallery">
+				<Frame {...{items: [series], menu: false }} />
 			</div>
 
 			<div className="mint-params">
@@ -111,13 +121,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 							{
 								type.indexOf('int') > -1 &&
-								<input type="number" onChange={(e) => {
-									const newArgs = { ...args, [name]: e.target.value };
-									setState({ ...state, args: newArgs });
-									let newCode = series.src;
-									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-									dispatch(loadCodeFromSrc('mint-preview', newCode));
-								}} />
+								<input type="number" onChange={(e) => updateArgs(name, e.target.value)} />
 							}
 
 							{
@@ -125,11 +129,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 								<input type="color" onChange={(e) => {
 									const color = hexToRgb(e.target.value, false, true);
 									const rgba = `"rgba(${color.join(',')}, 1)"`;
-									const newArgs = { ...args, [name]: rgba };
-									setState({ ...state, args: newArgs });
-									let newCode = series.src;
-									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-									dispatch(loadCodeFromSrc('mint-preview', newCode));
+									updateArgs(name, rgba)
 								}} />
 							}
 
@@ -138,22 +138,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 								<input type="color" onChange={(e) => {
 									const color = hexToRgb(e.target.value, true, true);
 									const input = color.concat([1]);
-									const newArgs = { ...args, [name]: JSON.stringify(input) };
-									setState({ ...state, args: newArgs });
-									let newCode = series.src;
-									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-									dispatch(loadCodeFromSrc('mint-preview', newCode));
+									updateArgs(name, JSON.stringify(input))
 								}} />
 							}
 							{
 								type.indexOf('webgl-float') > -1 &&
 								<input type="number" onChange={(e) => {
 									const input = e.target.value;
-									const newArgs = { ...args, [name]: JSON.stringify(input) };
-									setState({ ...state, args: newArgs });
-									let newCode = series.src;
-									Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-									dispatch(loadCodeFromSrc('mint-preview', newCode));
+									updateArgs(name, JSON.stringify(input))
 								}} />
 							}
 

@@ -1,5 +1,27 @@
 import { marketId, contractId } from './near';
 
+
+//TODO all should get codeId etc...
+const addCompatFields = (tokenOrSeries) => {
+	if (tokenOrSeries.series) {
+		tokenOrSeries.codeId = tokenOrSeries.token_id;
+		tokenOrSeries.codeSrc = tokenOrSeries.series.src;
+	} else {
+		const {series_name, src} = tokenOrSeries
+		tokenOrSeries.codeId = series_name;
+		tokenOrSeries.codeSrc = src;
+	}
+}
+export const getToken = (token_id) => async ({ getState, update }) => {
+	const { contractAccount } = getState();
+	const token = await contractAccount.viewFunction(contractId, 'nft_token', {
+		token_id,
+	});
+	token.series = await loadSeries(contractAccount, token.series_args.series_name)
+	addCompatFields(token)
+	update('views', { token });
+};
+
 export const getPackageRange = (from_index = '0', limit = '100') => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	const packages = await contractAccount.viewFunction(contractId, 'get_package_range', {
@@ -28,8 +50,7 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
 	await Promise.all(tokensPerOwner.map(async (token) => {
 		token.series = await loadSeries(contractAccount, token.series_args.series_name);
 		// alias for compat with tokens
-		token.codeId = token.token_id;
-		token.codeSrc = token.series.src;
+		addCompatFields(token)
 	}));
 	const seriesPerOwner = await contractAccount.viewFunction(contractId, 'series_per_owner', {
 		account_id,
@@ -54,10 +75,7 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
                 series.unsoldTokens.some(({ token_id: unsold_id }) => token_id === unsold_id)
 			);
 		}
-        
-		// alias for compat with tokens
-		series.codeId = series.series_name;
-		series.codeSrc = series.src;
+		addCompatFields(series)
 	}));
 	update('views', {
 		seriesPerOwner,
@@ -83,8 +101,7 @@ export const loadTokens = () => async ({ getState, update }) => {
 	await Promise.all(tokens.map(async (token) => {
 		token.series = await loadSeries(contractAccount, token.series_args.series_name);
 		// alias for compat with tokens
-		token.codeId = token.token_id;
-		token.codeSrc = token.series.src;
+		addCompatFields(token)
 	}));
 	update('views', { tokens });
 	return { tokens };
@@ -107,10 +124,7 @@ export const loadSales = () => async ({ getState, update }) => {
 		const series = await loadSeries(contractAccount, series_name);
 		series.sales = sales.filter(({ token_id, token_type }) => token_type === series_name || token_id === series_name);
 		series.claimed = parseInt(await contractAccount.viewFunction(contractId, 'nft_supply_for_series', { series_name }), 10);
-		// alias for compat with tokens
-        
-		series.codeId = series_name;
-		series.codeSrc = series.src;
+		addCompatFields(series)
 		return series;
 	}));
 	update('views', { sales, salesBySeries });
@@ -135,8 +149,7 @@ export const loadSeriesRange = () => async ({ getState, update }) => {
 
 		series.claimed = parseInt(await contractAccount.viewFunction(contractId, 'nft_supply_for_series', { series_name }), 10);
 
-		series.codeId = series_name;
-		series.codeSrc = series.src;
+		addCompatFields(series)
 		seriesCache[series_name] = series;
 	}));
 	update('views', { series: Object.values(seriesCache) });

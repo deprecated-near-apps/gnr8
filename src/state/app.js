@@ -18,6 +18,7 @@ const initialState = {
 		seriesPerOwner: [],
 		everything: [],
 		tokens: [],
+		token: null,
 		sales: [],
 		series: [],
 		packages: [],

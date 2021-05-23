@@ -39,8 +39,10 @@ export const pathAndArgs = () => {
 	} else {
 		path = window.location.pathname;
 	}
+	path = ('/' + path.split('/').filter(s => !!s.length).join('/').toLowerCase())
 	return {
-		path: ('/' + path.split('/').filter(s => !!s.length).join('/').toLowerCase()),
+		path,
+		pathParts: path.split('/').map((p) => p.split('?')[0]),
 		args,
 	};
 };
