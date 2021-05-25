@@ -124,7 +124,6 @@ section {
         height: calc(100vh - 6rem);
         &.preview {
             height: calc(50vh - 3rem);
-
         }
     }
     .iframe, .iframe iframe  {
@@ -133,9 +132,8 @@ section {
         margin: auto;
         border: none;
         width: 100%;
-        max-width: 50vh;
+        max-width: calc(50vh - 3rem);
         height: calc(50vh - 3rem);
-        
     }
     .iframe {
         border-top: 1px solid black;
@@ -143,7 +141,23 @@ section {
             display: none;
         }
     }
+    &.side-by {
+        display: flex;
+        .editor {
+            height: calc(100vh - 6rem);
+        }
+        .iframe, .iframe iframe  {
+            border-top: none;
+            border-left: 1px solid black;
+            margin: 0;
+            max-width: calc(50vw);
+            height: calc(50vw);
+        }
+    }
 }
+
+
+
 
 .mint-params, .owner-params {
     text-align: center;

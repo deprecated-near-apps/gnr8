@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {get, set, del} from '../utils/storage';
+import { get, set, del } from '../utils/storage';
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-jsx";
 import "ace-builds/src-noconflict/mode-markdown";
@@ -37,6 +37,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const [preview, setPreview] = useState(false);
 	const [code, setCode] = useState();
 	const [editor, setEditor] = useState();
+	const [sideBy, setSideBy] = useState(true);
 	const [showPackages, setShowPackages] = useState(false);
 	const [packageFilter, setPackageFilter] = useState('');
 
@@ -46,8 +47,8 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		checkSeriesUpdate();
 	}, []);
 
-	const checkSeriesUpdate = async() => {
-		const {series_name, src, attempts} = get(PENDING_SERIES_UPDATE + account.accountId);
+	const checkSeriesUpdate = async () => {
+		const { series_name, src, attempts } = get(PENDING_SERIES_UPDATE + account.accountId);
 		if (series_name) {
 			const data = await account.viewFunction(contractId, 'series_data', { series_name }, GAS);
 			if (data.src === src) {
@@ -58,8 +59,9 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}
 	};
 
-	const resize = (editor) => {
+	const updateEditorAndPreview = (editor, newValue) => {
 		if (!editor) return;
+		dispatch(loadCodeFromSrc('create-preview', newValue || code));
 		setTimeout(() => {
 			editor.resize();
 			editor.renderer.updateFull();
@@ -68,14 +70,13 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (editor) => {
 		setEditor(editor);
-		resize(editor);
+		updateEditorAndPreview(editor);
 	};
 
 	const onChange = async (newValue, showPreview) => {
-		dispatch(loadCodeFromSrc('create-preview', newValue));
 		setCode(newValue);
 		setPreview(preview || showPreview === true);
-		resize(editor);
+		updateEditorAndPreview(editor, newValue);
 	};
 
 	const includePackage = (i) => {
@@ -107,6 +108,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i))
 
 	const options = {
+		[sideBy ? '▷ Bottom Preview' : '▷ Side Preview']: () => { setSideBy(!sideBy) },
 		[showPackages ? '▽ Hide Packages' : '▷ Show Packages']: {
 			fn: () => { setShowPackages(!showPackages) },
 			close: false
@@ -145,7 +147,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 					account_id: marketId,
 					msg: JSON.stringify({
 						sale_conditions: [
-							{ ft_token_id: "near", price: parseNearAmount(price)}
+							{ ft_token_id: "near", price: parseNearAmount(price) }
 						]
 					})
 				}, GAS, parseNearAmount('1'));
@@ -162,29 +164,30 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 					},
 				}, GAS, parseNearAmount('1'));
 			}
-			
+
 		},
 	}
 
 	return <>
-		<div className="create">
-			<div className="menu no-barcode">
-				<div className="bar">
-					<div onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</div>
-					<div onClick={() => {
-						setPreview(!preview);
-						resize(editor);
-					}}>Preview</div>
-				</div>
-				{
-					createMenu === 'left' && <div className="sub below">
-						<Menu {...{
-							app, menuKey: 'createMenu', update, options,
-						}} />
-					</div>
-				}
-			</div>
 
+		<div className="menu no-barcode">
+			<div className="bar">
+				<div onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</div>
+				<div onClick={() => {
+					setPreview(!preview);
+					updateEditorAndPreview(editor);
+				}}>Preview</div>
+			</div>
+			{
+				createMenu === 'left' && <div className="sub below">
+					<Menu {...{
+						app, menuKey: 'createMenu', update, options,
+					}} />
+				</div>
+			}
+		</div>
+
+		<div className={["create", sideBy ? "side-by" : ""].join(' ')}>
 			<div className={preview ? 'editor preview' : 'editor'}>
 				<AceEditor
 					mode="jsx"

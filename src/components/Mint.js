@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import BN from 'bn.js';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { loadSales, getTokensForSeries } from '../state/views';
-import { hexToRgb } from '../utils/color';
 import { Menu } from './Menu';
+import { Params } from './Params';
 import { Frame } from './Frame';
 
 export const Mint = ({ app, path, views, update, dispatch, account }) => {
@@ -32,8 +31,8 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		if (!series.sales.length) {
 			return alert('None left of this series');
 		}
-
 		const mint = Object.values(args);
+		const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default))
 		
 		if (series.params.mint.length && !mint.length) {
 			return alert('Choose some values to make this unique');
@@ -53,7 +52,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			memo: JSON.stringify({
 				series_name: series.series_name,
 				mint,
-				owner: [],
+				owner,
 				receiver_id: account.accountId,
 			})
 		}, GAS, parseNearAmount('1.1'));
@@ -113,47 +112,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			</div>
 
 			<div className="mint-params">
-				{
-					params.map(({ name, type }) => {
-						// TODO debounce
-						return <div key={name}>
-							<span>{name}</span>
-
-							{
-								type.indexOf('int') > -1 &&
-								<input type="number" onChange={(e) => updateArgs(name, e.target.value)} />
-							}
-
-							{
-								type.indexOf('rgba-color') > -1 &&
-								<input type="color" onChange={(e) => {
-									const color = hexToRgb(e.target.value, false, true);
-									const rgba = `"rgba(${color.join(',')}, 1)"`;
-									updateArgs(name, rgba)
-								}} />
-							}
-
-							{
-								type.indexOf('webgl-color') > -1 &&
-								<input type="color" onChange={(e) => {
-									const color = hexToRgb(e.target.value, true, true);
-									const input = color.concat([1]);
-									updateArgs(name, JSON.stringify(input))
-								}} />
-							}
-							{
-								type.indexOf('webgl-float') > -1 &&
-								<input type="number" onChange={(e) => {
-									const input = e.target.value;
-									updateArgs(name, JSON.stringify(input))
-								}} />
-							}
-
-
-							
-						</div>;
-					})
-				}
+				<Params {...{params, args, updateArgs}} />
 			</div>
 		</div>
 
