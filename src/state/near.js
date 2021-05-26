@@ -1,4 +1,4 @@
-import React from 'react';
+import BN from 'bn.js'
 import getConfig from '../config';
 import * as nearAPI from 'near-api-js';
 import { getWallet, postSignedJson } from '../utils/near-utils';
@@ -22,6 +22,10 @@ export const {
 
 export const initNear = () => async ({ update, getState, dispatch }) => {
 	const { near, wallet, contractAccount } = await getWallet();
+
+	contractAccount.viewFunction(marketId, 'storage_amount').then((result) => {
+		update('views', { storagePerSale: new BN(result)  })
+	})
 
 	window.near = near;
 

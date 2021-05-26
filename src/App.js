@@ -80,7 +80,7 @@ const App = () => {
 		</div>
 
 		<section>
-			{ path === '/' && <Market {...{ dispatch, views }} /> }
+			{ path === '/' && <Market {...{ dispatch, views, account }} /> }
 			{ path === '/series' && <Series {...{ dispatch, views, args }} /> }
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }

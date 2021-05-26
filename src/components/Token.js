@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import BN from 'bn.js'
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { getToken } from '../state/views';
@@ -7,7 +8,7 @@ import { Params } from './Params';
 
 export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
-	const { token } = views;
+	const { token, storagePerSale } = views;
 
 	const [state, setState] = useState({});
 
@@ -59,13 +60,50 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		})
 	}
 
+	const handleSell = async () => {
+		const { token_id } = token;
+
+		const num_sales = new BN(await account.viewFunction(marketId, 'get_supply_by_owner_id', { account_id: account.accountId }))
+		const storage = new BN(await account.viewFunction(marketId, 'storage_paid', { account_id: account.accountId }))
+
+		if (num_sales.mul(storagePerSale).gte(storage)) {
+			const mul = window.prompt('Must add storage to list sales. How many would you like to deposit for?')
+			return await account.functionCall({
+				marketId,
+				methodName: 'storage_deposit',
+				gas: GAS,
+				attachedDeposit: storagePerSale.mul(mul)
+			})
+		}
+
+		await account.functionCall({
+			contractId,
+			methodName: 'nft_approve',
+			args: {
+				token_id,
+				account_id: marketId,
+				msg: JSON.stringify({
+					sale_conditions: [
+						{ ft_token_id: "near", price: parseNearAmount(window.prompt('Selling price?\n(in NEAR, or 0 to accept bids)')) }
+					]
+				})
+			},
+			gas: GAS,
+			attachedDeposit: parseNearAmount('0.1')
+		})
+	}
+
 	return <>
 
+
 		<div className="menu no-barcode">
-			<div className="bar">
-				<div onClick={() => handleUpdate()}>Update</div>
-				<div onClick={() => handleOffer()}>Sell</div>
-			</div>
+			{
+				isOwner &&
+				<div className="bar">
+					<div onClick={() => handleUpdate()}>Update</div>
+					<div onClick={() => handleSell()}>Sell</div>
+				</div>
+			}
 		</div>
 
 		<div className="gallery">
@@ -73,10 +111,10 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		</div>
 		{
 			isOwner && <div className="owner-params">
-				<Params {...{params, args, updateArgs}} />
+				<Params {...{ params, args, updateArgs }} />
 			</div>
 		}
-		
+
 	</>;
 };
 

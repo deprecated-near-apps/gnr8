@@ -79,13 +79,17 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
 	}));
 	update('views', {
 		seriesPerOwner,
-		tokensPerOwner: tokensPerOwner.filter(({ num_transfers }) => num_transfers !== '0')
+		tokensPerOwner
 	});
 };
 
 export const loadEverything = () => async ({ update, dispatch }) => {
-	const { salesBySeries } = await dispatch(loadSales());
+	const { sales, salesBySeries } = await dispatch(loadSales());
 	const { tokens } = await dispatch(loadTokens());
+
+	tokens.forEach((token) => {
+		token.sales = sales.filter(({ token_id }) => token.token_id === token_id)
+	})
 	const everything = [...tokens, ...salesBySeries];
 	everything.sort((a, b) => parseInt(b.issued_at, 10) - parseInt(a.issued_at, 10));
 	update('views', { everything });
@@ -117,7 +121,7 @@ export const loadSales = () => async ({ getState, update }) => {
 	});
     
 	const seriesNames = [...new Set(sales.map(({ token_id, token_type }) => {
-		return token_type || token_id;
+		return (token_type || token_id).split(':')[0];
 	} ))];
 
 	const salesBySeries = await Promise.all(seriesNames.map(async (series_name) => {
@@ -127,6 +131,7 @@ export const loadSales = () => async ({ getState, update }) => {
 		addCompatFields(series)
 		return series;
 	}));
+
 	update('views', { sales, salesBySeries });
 	return { sales, salesBySeries };
 };

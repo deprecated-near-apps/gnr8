@@ -8,13 +8,18 @@ export const {
 	accessKeyMethods,
 } = getConfig();
 
-const {
+export const {
 	Near,
 	keyStores,
 	Account,
 	WalletAccount,
 	Contract,
 	InMemorySigner,
+	utils: {
+		format: {
+			formatNearAmount, parseNearAmount
+		}
+	}
 } = nearAPI;
 
 export const near = new Near({
@@ -25,7 +30,6 @@ export const near = new Near({
 		keyStore: new keyStores.BrowserLocalStorageKeyStore()
 	},
 });
-
 // alias
 export const contractId = contractName;
 export const marketId = 'market.' + contractName;

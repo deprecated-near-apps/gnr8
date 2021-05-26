@@ -141,32 +141,23 @@ section {
             display: none;
         }
     }
-    &.side-by {
-        display: flex;
-        .editor {
-            height: calc(100vh - 6rem);
-        }
-        .iframe, .iframe iframe  {
-            border-top: none;
-            border-left: 1px solid black;
-            margin: 0;
-            max-width: calc(50vw);
-            height: calc(50vw);
-        }
-    }
 }
 
-
-
-
 .mint-params, .owner-params {
-    text-align: center;
+    margin: auto;
+    width: 100vw;
     > div {
+        label {
+            margin-left: 1rem;
+        }
         > span {
             margin-right: 1rem;
         }
-        padding: 1rem;
+        input {
+            width: 50%;
+        }
     }
+    margin-bottom: 32px;
 }
 
 .gallery {
@@ -187,9 +178,11 @@ section {
             width: 100%;
             background: rgba(0, 0, 0, 0.75);
             font-size: 1rem;
-            padding: 0.25rem 0.25rem 0.1rem 0.25rem;
+            line-height: 2rem;
+            padding: 0.5rem 1rem 0.25rem 1rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             > div {
                 width: 50%;
                 white-space: nowrap;
@@ -200,13 +193,13 @@ section {
                 text-align: right;
             }
         }
-        > div:nth-child(2) {
-            position: absolute;
-            bottom: 0;
-        }
-        > div:nth-child(3) {
+        > div.top-bar {
             position: absolute;
             top: 0;
+        }
+        > div.bottom-bar {
+            position: absolute;
+            bottom: 0;
         }
     }
 }
@@ -217,9 +210,22 @@ section {
     html {
         font-size: 1.1rem;
     }
-    .gallery .iframe {
+    .gallery .iframe, .mint-params, .owner-params {
         width: 50vw;
         height: 50vw;
+    }
+    .create.side-by {
+        display: flex;
+        .editor {
+            height: calc(100vh - 6rem);
+        }
+        .iframe, .iframe iframe  {
+            border-top: none;
+            border-left: 1px solid black;
+            margin: 0;
+            max-width: calc(50vw);
+            height: calc(50vw);
+        }
     }
 }
 @media (min-width: 992px) {
@@ -230,7 +236,7 @@ section {
     html {
         font-size: 1.2rem;
     }
-    .gallery .iframe {
+    .gallery .iframe, .mint-params, .owner-params {
         width: 33.33vw;
         height: 33.33vw;
     }

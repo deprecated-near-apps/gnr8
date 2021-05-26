@@ -97,12 +97,15 @@ impl Contract {
             .0;
 
         let deposit = env::attached_deposit();
+        let memo_is_some = memo.is_some();
         assert!(deposit > 0, "Attached deposit must be greater than 0");
         // there's a fixed price user can buy for so process purchase
         // or, with memo user is passing through their deposit
-        if deposit == price || memo.is_some() {
+        if deposit == price || memo_is_some {
             let diff = deposit - price;
-            assert!(diff > 0, "Attached deposit must be greater than price (to pay for storage of minted NFT).");
+            if memo_is_some {
+                assert!(diff > 0, "Attached deposit must be greater than price (to pay for storage of minted NFT).");
+            }
             self.process_purchase(
                 sale,
                 contract_id,
@@ -140,6 +143,10 @@ impl Contract {
         }
 
         let price = sale.conditions[&ft_token_id];
+        let mut nft_transfer_deposit = paid.0.saturating_sub(price.0);
+        if nft_transfer_deposit < 1 {
+            nft_transfer_deposit = 1
+        }
 
         ext_contract::nft_transfer_payout(
             buyer_id.clone(),
@@ -149,7 +156,7 @@ impl Contract {
             price,
             &nft_contract_id,
             // price paid remains with contract (excess deposit for storage cost of series lazy mint)
-            paid.0.saturating_sub(price.0),
+            nft_transfer_deposit,
             GAS_FOR_NFT_TRANSFER,
         )
         .then(ext_self::resolve_purchase(
