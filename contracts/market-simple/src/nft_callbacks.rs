@@ -132,7 +132,6 @@ trait NonFungibleSeriesApprovalReceiver {
 
 #[near_bindgen]
 impl NonFungibleSeriesApprovalReceiver for Contract {
-    /// where we add the sale because we know nft owner can only call nft_approve
 
     #[payable]
     fn series_on_approve(
@@ -141,9 +140,13 @@ impl NonFungibleSeriesApprovalReceiver for Contract {
         owner_id: ValidAccountId,
         msg: String,
     ) {
-        // pay storage
-        self.storage_deposit(Some(owner_id.clone()));
+        // pay storage for 1 sale listing
+        let storage_amount = self.storage_amount().0;
+        self.storage_deposit(Some(owner_id.clone()), Some(storage_amount));
+        // refund excess
+        Promise::new(owner_id.clone().into()).transfer(env::attached_deposit().saturating_sub(storage_amount));
         
+        // double check owner has enough storage for market listing
         let owner_paid_storage = self.storage_deposits.get(owner_id.as_ref()).unwrap_or(0);
         assert!(
             owner_paid_storage >= STORAGE_PER_SALE,

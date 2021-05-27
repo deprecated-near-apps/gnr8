@@ -11,7 +11,7 @@ import { getPackageRange } from '../state/views';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 
-import { sha256 } from 'js-sha256'
+import { sha256 } from 'js-sha256';
 
 import { Menu } from './Menu';
 import { reglExample } from '../../test/examples/regl-example';
@@ -32,7 +32,7 @@ const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE';
 
 export const Create = ({ app, views, update, dispatch, account }) => {
 
-	const { packages } = views
+	const { packages } = views;
 
 	const [preview, setPreview] = useState(false);
 	const [code, setCode] = useState();
@@ -43,7 +43,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	useEffect(() => {
 		onChange(p51.src, true);
-		dispatch(getPackageRange())
+		dispatch(getPackageRange());
 		checkSeriesUpdate();
 	}, []);
 
@@ -81,22 +81,22 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const includePackage = (i) => {
 		const { params } = getParams(code);
-		const pkg = packages[i].name_version
-		if (!params.packages.includes(pkg)) params.packages.push(pkg)
-		setCode(code.replace(new RegExp(`packages: .*,`, 'g'), `packages: ${JSON.stringify(params.packages)},`))
-	}
+		const pkg = packages[i].name_version;
+		if (!params.packages.includes(pkg)) params.packages.push(pkg);
+		setCode(code.replace(new RegExp(`packages: .*,`, 'g'), `packages: ${JSON.stringify(params.packages)},`));
+	};
 
 	const addPackage = async () => {
-		const name_version = window.prompt('name@version (exactly like this)')
-		const urls = [window.prompt('CDN URL?')]
-		const src_hash = sha256(await fetch(urls[0]).then(r => r.text()))
+		const name_version = window.prompt('name@version (exactly like this)');
+		const urls = [window.prompt('CDN URL?')];
+		const src_hash = sha256(await fetch(urls[0]).then(r => r.text()));
 
 		await account.functionCall(contractId, 'add_package', {
 			name_version,
 			urls,
 			src_hash
 		}, GAS, parseNearAmount('1'));
-	}
+	};
 
 	const { createMenu } = app;
 
@@ -105,12 +105,12 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		'- Filter': { frag: <input type="text" onChange={(e) => setPackageFilter(e.target.value)} /> },
 	};
 	packages.filter(({ name_version }) => name_version.indexOf(packageFilter) > -1)
-		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i))
+		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i));
 
 	const options = {
-		[sideBy ? '▷ Bottom Preview' : '▷ Side Preview']: () => { setSideBy(!sideBy) },
+		[sideBy ? '▷ Bottom Preview' : '▷ Side Preview']: () => { setSideBy(!sideBy); },
 		[showPackages ? '▽ Hide Packages' : '▷ Show Packages']: {
-			fn: () => { setShowPackages(!showPackages) },
+			fn: () => { setShowPackages(!showPackages); },
 			close: false
 		},
 		...(showPackages ? packageMenu : {}),
@@ -166,7 +166,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			}
 
 		},
-	}
+	};
 
 	return <>
 

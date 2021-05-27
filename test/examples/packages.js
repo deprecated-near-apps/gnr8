@@ -15,7 +15,7 @@ exports.getPackages = async () => {
 		name_version: packages[0],
 		src_hash: sha256(await fetch('https://cdn.jsdelivr.net/npm/p5@1.3.1/lib/p5.js').then(r => r.text())),
 		urls: ['https://cdn.jsdelivr.net/npm/p5@1.3.1/lib/p5.js']
-	}
+	};
 
 	const threeUrls = [
 		'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',

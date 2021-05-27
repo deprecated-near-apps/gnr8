@@ -32,7 +32,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			return alert('None left of this series');
 		}
 		const mint = Object.values(args);
-		const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default))
+		const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default));
 		
 		if (series.params.mint.length && !mint.length) {
 			return alert('Choose some values to make this unique');
@@ -59,18 +59,18 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 	};
 
 	const { series, args = {} } = state;
-	const options = {};
+
 	const params = [];
 	if (series) {
 		Object.entries(getParams(series.src).params.mint).forEach(([k, v]) => {
-			options[k] = () => {
-				const input = window.prompt(`Update ${k}. Use the same format as the default value provided.`, JSON.stringify(v.default));
-				const newArgs = { ...args, [k]: input };
-				setState({ ...state, args: newArgs });
-				let newCode = series.src;
-				Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-				dispatch(loadCodeFromSrc(series.series_name, newCode));
-			};
+			// mintMenuOptions[k] = () => {
+			// 	const input = window.prompt(`Update ${k}. Use the same format as the default value provided.`, JSON.stringify(v.default));
+			// 	const newArgs = { ...args, [k]: input };
+			// 	setState({ ...state, args: newArgs });
+			// 	let newCode = series.src;
+			// 	Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+			// 	dispatch(loadCodeFromSrc(series.series_name, newCode));
+			// };
 
 			params.push({
 				name: k,
@@ -79,36 +79,56 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			});
 		});
 	} else {
-		return null
+		return null;
 	}
 
+	console.log(series);
+
+
+	const mintMenuOptions = {
+		[series.series_name]: {
+			frag: <>
+				<div>A mintable series with a total supply of {series.params.max_supply}.</div>
+				{ series.params.enforce_unique_args &&
+				<div>
+					Each combination of minting parameters below
+					({params.map((p) => p.name)})
+					must be unique from other minted tokens.
+				</div>}
+				<div>
+					Minting asks for more than list price to pay storage of your unique arguments on chain. You will be refunded any unused NEAR.
+				</div>
+			</>
+		}
+	};
+
 	const updateArgs = (name, value) => {
-		if (!value.length) return
+		if (!value.length) return;
 		const newArgs = { ...args, [name]: value };
 		setState({ ...state, args: newArgs });
 		let newCode = series.src;
 		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
 		dispatch(loadCodeFromSrc(series.series_name, newCode));
-	}
+	};
 
 	return <>
 		<div className="mint">
 			<div className="menu no-barcode">
 				<div className="bar">
-					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}>Options</div>
-					<div onClick={() => handleOffer()}>Make Offer</div>
+					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}>About</div>
+					<div onClick={() => handleOffer()}>Mint</div>
 				</div>
 				{
 					mintMenu === 'left' && <div className="sub below">
 						<Menu {...{
-							app, menuKey: 'mintMenu', update, options
+							app, menuKey: 'mintMenu', update, options: mintMenuOptions
 						}} />
 					</div>
 				}
 			</div>
 
 			<div className="gallery">
-				<Frame {...{items: [series], menu: false }} />
+				<Frame {...{items: [series], menu: 'onlyTop' }} />
 			</div>
 
 			<div className="mint-params">

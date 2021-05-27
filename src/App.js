@@ -27,6 +27,7 @@ const App = () => {
 	useEffect(onMount, []);
 	useHistory(() => {
 		toggleMainMenu(false);
+		document.body.scrollTo(0,0);
 		update('app.href', window.location.href);
 	}, true);
 	const { path, pathParts, args } = pathAndArgs();
@@ -63,7 +64,10 @@ const App = () => {
 				<div className="sub">
 					{menu === 'left' && <Menu {...{
 						app, menuKey: 'menu', update, options: {
-							'▷ Sign Out': () => wallet.signOut()
+							'▷ Sign Out': () => {
+								history.push('/');
+								wallet.signOut();
+							}
 						}
 					}} />}
 					{menu === 'right' && <Menu {...{

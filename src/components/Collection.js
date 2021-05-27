@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import BN from 'bn.js';
-import { loadEverything, loadEverythingForOwner } from '../state/views';
+import { loadEverythingForOwner } from '../state/views';
 import { loadCodeFromSrc } from '../state/code';
-import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
-import { get, set, del } from '../utils/storage';
 import {Frame} from './Frame';
-
-const TEMP_APPROVAL_DATA = 'TEMP_APPROVAL_DATA';
 
 export const Collection = ({ dispatch, views, account, near }) => {
 	if (!account) return null;
 
-	const [loaded, setLoaded] = useState(false)
+	const [loading, setLoading] = useState({
+		title: 'Loading...',
+		sub: null,
+		cta: null,
+	});
 
 	const { tokensPerOwner, seriesPerOwner } = views;
 	const items = [...tokensPerOwner, ...seriesPerOwner];
 
-	useEffect(() => {
-		dispatch(loadEverythingForOwner(account.accountId));
-		/// TODO await loadEverthing in another function
-		setTimeout(() => setLoaded(true), 500)
-	}, []);
+	const mount = async () => {
+		const { tokensPerOwner, seriesPerOwner } = await dispatch(loadEverythingForOwner(account.accountId));
+		if ([...tokensPerOwner, ...seriesPerOwner].length === 0) {
+			return setLoading({
+				title: 'No Tokens',
+				sub: 'Try creating or purchasing a token from a series!',
+				cta: <div onClick={() => history.push('/')}>Go to Market</div>
+			});
+		}
+		setLoading(null);
+	};
+	useEffect(mount, []);
 	
 	useEffect(() => {
 		if (!items.length) return;
@@ -31,10 +37,12 @@ export const Collection = ({ dispatch, views, account, near }) => {
 
 	return <>
 	
-		{ loaded && !items.length && <center>
-				<h1>No Tokens</h1>
-				<h4>Try creating or purchasing a token from a series!</h4>
+		{ loading && <center>
+			<h1>{ loading.title }</h1>
+			<h4>{ loading.sub }</h4>
+			{ loading.cta }
 		</center>}
+
 		<div className="gallery">
 			
 			<Frame {...{ items }} />

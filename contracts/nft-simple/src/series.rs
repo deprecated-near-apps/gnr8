@@ -60,8 +60,6 @@ pub struct SeriesJson {
     pub params: SeriesParams,
 }
 
-
-
 #[near_bindgen]
 impl Contract {
 

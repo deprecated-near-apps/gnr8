@@ -13,11 +13,11 @@ export const Menu = ({ app, menuKey, update, options = {} }) => {
 			Object.entries(options).map(([k, v]) => 
 				<div key={k} className="item" onClick={(e) => {
 					if (typeof v === 'object') {
-						if (!v.fn) return
+						if (!v.fn) return;
 						if (v.close) update('app.' + menuKey, false);
 						return v.fn(e);
 					}
-					v(e)
+					v(e);
 					update('app.' + menuKey, false);
 				}}>
 					{k}

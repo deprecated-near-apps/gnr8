@@ -113,11 +113,15 @@ impl Contract {
     /// TODO remove token (should check if sales can complete even if owner stops supporting token type)
 
     #[payable]
-    pub fn storage_deposit(&mut self, account_id: Option<ValidAccountId>) {
+    pub fn storage_deposit(&mut self, account_id: Option<ValidAccountId>, amount: Option<Balance>) {
         let storage_account_id = account_id
             .map(|a| a.into())
             .unwrap_or_else(env::predecessor_account_id);
-        let deposit = env::attached_deposit();
+        let deposit = if let Some(amount) = amount {
+            amount
+        } else {
+            env::attached_deposit()
+        };
         assert!(
             deposit >= STORAGE_PER_SALE,
             "Requires minimum deposit of {}",

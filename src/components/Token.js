@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import BN from 'bn.js'
+import BN from 'bn.js';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { getToken } from '../state/views';
@@ -10,7 +10,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	const { token, storagePerSale } = views;
 
-	const [state, setState] = useState({});
+	const [state, setState] = useState({ args: {} });
 
 	useEffect(() => {
 		if (pathParts[2] && pathParts[2].length) dispatch(getToken(pathParts[2]));
@@ -18,36 +18,36 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	useEffect(() => {
 		if (!token) return;
-		const { codeId, codeSrc, series_args } = token
+		const { codeId, codeSrc, series_args } = token;
 		dispatch(loadCodeFromSrc(codeId, codeSrc, series_args));
-		const { params: { owner } } = getParams(codeSrc)
-		const args = {}
-		Object.entries(owner).forEach(([name], i) => args[name] = token.series_args.owner[i])
-		setState({ ...state, owner, args })
+		const { params: { owner } } = getParams(codeSrc);
+		const args = {};
+		Object.entries(owner).forEach(([name], i) => args[name] = token.series_args.owner[i]);
+		setState({ ...state, owner, args });
 	}, [token]);
 
 	if (!token) return null;
 
-	const isOwner = token.owner_id === account.accountId
-	const params = []
-	const { args, owner } = state
+	const isOwner = token.owner_id === account.accountId;
+	const params = [];
+	const { args, owner } = state;
 	if (owner) {
-		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }))
+		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }));
 	}
 
 	const updateArgs = (name, value) => {
-		console.log(name, value)
-		if (!value.length) return
+		if (!value.length) return;
 		const newArgs = { ...args, [name]: value };
 		setState({ ...state, args: newArgs });
 		let newCode = token.codeSrc;
 		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
 		dispatch(loadCodeFromSrc(token.codeId, newCode));
-	}
+	};
 
 	const handleUpdate = async () => {
 		const { token_id } = token;
 		const { args: owner_args } = state;
+
 		await account.functionCall({
 			contractId,
 			methodName: 'update_token_owner_args',
@@ -57,23 +57,26 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 			},
 			gas: GAS,
 			attachedDeposit: parseNearAmount('0.1')
-		})
-	}
+		});
+	};
 
 	const handleSell = async () => {
 		const { token_id } = token;
 
-		const num_sales = new BN(await account.viewFunction(marketId, 'get_supply_by_owner_id', { account_id: account.accountId }))
-		const storage = new BN(await account.viewFunction(marketId, 'storage_paid', { account_id: account.accountId }))
+		const num_sales = new BN(await account.viewFunction(marketId, 'get_supply_by_owner_id', { account_id: account.accountId }));
+		const storage = new BN(await account.viewFunction(marketId, 'storage_paid', { account_id: account.accountId }));
 
 		if (num_sales.mul(storagePerSale).gte(storage)) {
-			const mul = window.prompt('Must add storage to list sales. How many would you like to deposit for?')
+			const mul = window.prompt('Must deposit some NEAR to list sales. How many sales would you like to deposit for?');
+			if (!/^\d+$/.test(mul) || parseInt(mul) === NaN) {
+				return alert('Not a number sorry, try again!');
+			}
 			return await account.functionCall({
-				marketId,
+				contractId: marketId,
 				methodName: 'storage_deposit',
 				gas: GAS,
-				attachedDeposit: storagePerSale.mul(mul)
-			})
+				attachedDeposit: storagePerSale.mul(new BN(mul)).toString()
+			});
 		}
 
 		await account.functionCall({
@@ -90,31 +93,62 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 			},
 			gas: GAS,
 			attachedDeposit: parseNearAmount('0.1')
-		})
-	}
+		});
+	};
+
+	const handleRemoveSale = async () => {
+		const { token_id } = token;
+
+		await account.functionCall({
+			contractId: marketId,
+			methodName: 'remove_sale',
+			args: {
+				nft_contract_id: contractId,
+				token_id
+			},
+			gas: GAS,
+			attachedDeposit: 1
+		});
+	};
+
+	const argVals = Object.values(state.args);
+	const isChanged = argVals.length && JSON.stringify(token.series_args.owner) !== JSON.stringify(argVals);
 
 	return <>
-
-
 		<div className="menu no-barcode">
-			{
-				isOwner &&
-				<div className="bar">
-					<div onClick={() => handleUpdate()}>Update</div>
-					<div onClick={() => handleSell()}>Sell</div>
-				</div>
-			}
+			<div className="bar">
+				{
+					isOwner ?
+						<div
+							style={{ visibility: isChanged ? 'visible' : 'hidden' }}
+							onClick={() => handleUpdate()}
+						>
+						Update
+						</div>
+						:
+						<div onClick={() => history.push('/')}>
+						Back
+						</div>
+				}
+				{isOwner && <>
+					{
+						token.sales.length > 0 && !!token.sales[0] ?
+							<div onClick={() => handleRemoveSale()}>Remove Sale</div>
+							:
+							<div onClick={() => handleSell()}>Sell</div>
+					}
+				</>}
+			</div>
 		</div>
 
 		<div className="gallery">
-			<Frame {...{ items: [token], menu: false }} />
+			<Frame {...{ items: [token], menu: !isOwner }} />
 		</div>
 		{
 			isOwner && <div className="owner-params">
 				<Params {...{ params, args, updateArgs }} />
 			</div>
 		}
-
 	</>;
 };
 
