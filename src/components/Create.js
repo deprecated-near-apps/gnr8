@@ -19,6 +19,7 @@ import { three1 } from '../../test/examples/three-1';
 import { three2 } from '../../test/examples/three-2';
 import { three3 } from '../../test/examples/three-3';
 import { p51 } from '../../test/examples/p5-1';
+import { pixi } from '../../test/examples/pixi';
 
 const examples = [
 	reglExample,
@@ -26,6 +27,7 @@ const examples = [
 	three2,
 	three3,
 	p51,
+	pixi,
 ];
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE';
@@ -41,11 +43,12 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const [showPackages, setShowPackages] = useState(false);
 	const [packageFilter, setPackageFilter] = useState('');
 
-	useEffect(() => {
+	const init = async () => {
+		await dispatch(getPackageRange());
 		onChange(p51.src, true);
-		dispatch(getPackageRange());
 		checkSeriesUpdate();
-	}, []);
+	}
+	useEffect(init, []);
 
 	const checkSeriesUpdate = async () => {
 		const { series_name, src, attempts } = get(PENDING_SERIES_UPDATE + account.accountId);
@@ -60,8 +63,10 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	};
 
 	const updateEditorAndPreview = (editor, newValue) => {
-		if (!editor) return;
-		dispatch(loadCodeFromSrc('create-preview', newValue || code));
+		if (!editor || !code) return;
+		dispatch(loadCodeFromSrc({
+			id: 'create-preview', src: code,
+		}));
 		setTimeout(() => {
 			editor.resize();
 			editor.renderer.updateFull();
@@ -98,6 +103,48 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}, GAS, parseNearAmount('1'));
 	};
 
+	const handleCreateSeries = async () => {
+		const { params } = getParams(code);
+
+		const series_name = window.prompt('Name of Series?');
+		const sellNow = window.confirm('Sell series now?');
+		const price = window.prompt('What price in NEAR?');
+
+		set(PENDING_SERIES_UPDATE + account.accountId, { series_name, src: code, attempts: 0 });
+
+		if (sellNow) {
+			account.functionCall(contractId, 'series_create_and_approve', {
+				series_name,
+				bytes: code.length.toString(),
+				params: {
+					max_supply: params.max_supply,
+					enforce_unique_args: params.enforce_unique_args || false,
+					mint: Object.keys(params.mint),
+					owner: Object.keys(params.owner),
+					packages: params.packages,
+				},
+				account_id: marketId,
+				msg: JSON.stringify({
+					sale_conditions: [
+						{ ft_token_id: "near", price: parseNearAmount(price) }
+					]
+				})
+			}, GAS, parseNearAmount('1'));
+		} else {
+			account.functionCall(contractId, 'series_create', {
+				series_name,
+				bytes: code.length.toString(),
+				params: {
+					max_supply: params.max_supply,
+					enforce_unique_args: params.enforce_unique_args || false,
+					mint: Object.keys(params.mint),
+					owner: Object.keys(params.owner),
+					packages: params.packages,
+				},
+			}, GAS, parseNearAmount('1'));
+		}
+	}
+
 	const { createMenu } = app;
 
 	const packageMenu = {
@@ -124,48 +171,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			].join(''));
 		},
 		'▷ Add Owner Parameter': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
-		'▷ Create Series': () => {
-			const { params } = getParams(code);
-
-			const series_name = window.prompt('Name of Series?');
-			const sellNow = window.confirm('Sell series now?');
-			const price = window.prompt('What price in NEAR?');
-
-			set(PENDING_SERIES_UPDATE + account.accountId, { series_name, src: code, attempts: 0 });
-
-			if (sellNow) {
-				account.functionCall(contractId, 'series_create_and_approve', {
-					series_name,
-					bytes: code.length.toString(),
-					params: {
-						max_supply: params.max_supply,
-						enforce_unique_args: true,
-						mint: Object.keys(params.mint),
-						owner: Object.keys(params.owner),
-						packages: params.packages,
-					},
-					account_id: marketId,
-					msg: JSON.stringify({
-						sale_conditions: [
-							{ ft_token_id: "near", price: parseNearAmount(price) }
-						]
-					})
-				}, GAS, parseNearAmount('1'));
-			} else {
-				account.functionCall(contractId, 'series_create', {
-					series_name,
-					bytes: code.length.toString(),
-					params: {
-						max_supply: params.max_supply,
-						enforce_unique_args: true,
-						mint: Object.keys(params.mint),
-						owner: Object.keys(params.owner),
-						packages: params.packages,
-					},
-				}, GAS, parseNearAmount('1'));
-			}
-
-		},
+		'▷ Create Series': () => handleCreateSeries(),
 	};
 
 	return <>

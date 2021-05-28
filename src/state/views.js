@@ -94,7 +94,6 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
 export const loadEverything = () => async ({ update, dispatch }) => {
 	const { sales, salesBySeries } = await dispatch(loadSales());
 	const { tokens } = await dispatch(loadTokens());
-
 	tokens.forEach((token) => {
 		token.sales = sales.filter(({ token_id }) => token.token_id === token_id);
 	});
@@ -109,7 +108,6 @@ export const loadTokens = () => async ({ getState, update }) => {
 		from_index: '0',
 		limit: '100'
 	});
-	tokens = tokens.filter(({ series_args }) => series_args.mint.length);
 	await Promise.all(tokens.map(async (token) => {
 		token.series = await loadSeries(contractAccount, token.series_args.series_name);
 		// alias for compat with tokens

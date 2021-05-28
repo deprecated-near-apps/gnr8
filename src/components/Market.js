@@ -25,8 +25,10 @@ export const Market = ({ dispatch, views, account }) => {
 
 	useEffect(() => {
 		if (!everything.length) return;
-		everything.forEach(({ codeId, codeSrc, series_args }) => {
-			dispatch(loadCodeFromSrc(codeId, codeSrc, series_args));
+		everything.forEach(({ codeId: id, codeSrc: src, series_args: args, owner_id, num_transfers }) => {
+			dispatch(loadCodeFromSrc({
+				id, src, args, owner_id, num_transfers
+			}));
 		});
 	}, [everything.length]);
 

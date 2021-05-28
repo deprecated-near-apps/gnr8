@@ -23,7 +23,10 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		const series = salesBySeries.find(({ series_name }) => series_name === seriesName);
 		const sale = series.sales.find(({ token_type }) => seriesName === token_type);
 		setState({ series, sale, args: {} });
-		dispatch(loadCodeFromSrc(series.series_name, series.src));
+		const { src, owner_id } = series
+		dispatch(loadCodeFromSrc({
+			id: series.series_name, src, owner_id
+		}));
 	}, [salesBySeries]);
 
 	const handleOffer = async () => {
@@ -82,9 +85,6 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		return null;
 	}
 
-	console.log(series);
-
-
 	const mintMenuOptions = {
 		[series.series_name]: {
 			frag: <>
@@ -108,7 +108,9 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		setState({ ...state, args: newArgs });
 		let newCode = series.src;
 		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-		dispatch(loadCodeFromSrc(series.series_name, newCode));
+		dispatch(loadCodeFromSrc({
+			id: series.series_name, src: newCode, owner_id: series.owner_id
+		}));
 	};
 
 	return <>

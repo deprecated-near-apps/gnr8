@@ -149,14 +149,14 @@ impl NonFungibleTokenCore for Contract {
             approved_account_ids = previous_token.approved_account_ids;
         };
         
-        let token_data = self.token_data_by_id.get(&token_id).expect("No token data");
+        let mut token_data = self.token_data_by_id.get(&token_id).expect("No token data");
         
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
         
         let mut total_perpetual = 0;
         let payout = if let Some(balance) = balance {
-            let royalty = token_data.royalty;
+            let royalty = token_data.royalty.clone();
 
             if let Some(max_len_payout) = max_len_payout {
                 assert!(royalty.len() as u32 <= max_len_payout, "Market cannot payout to that many receivers");
@@ -187,6 +187,9 @@ impl NonFungibleTokenCore for Contract {
         } else {
             None
         };
+
+        token_data.num_transfers = U64(token_data.num_transfers.0 + 1);
+        self.token_data_by_id.insert(&token_id, &token_data);
 
         // refund any NEAR if storage reqs changed
         refund_approved_account_ids(

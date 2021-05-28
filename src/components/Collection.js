@@ -30,8 +30,10 @@ export const Collection = ({ dispatch, views, account, near }) => {
 	
 	useEffect(() => {
 		if (!items.length) return;
-		items.forEach(({ codeId, codeSrc, series_args }) => {
-			dispatch(loadCodeFromSrc(codeId, codeSrc, series_args));
+		items.forEach(({ codeId: id, codeSrc: src, series_args: args, owner_id, num_transfers }) => {
+			dispatch(loadCodeFromSrc({
+				id, src, args, owner_id, num_transfers
+			}));
 		});
 	}, [items.length]);
 

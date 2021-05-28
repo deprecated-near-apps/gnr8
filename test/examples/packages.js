@@ -5,11 +5,18 @@ const packages = [
 	'p5@1.3.1',
 	'three.js@r128',
 	'regl@2.1.0',
+	'pixi@5.1.3'
 ];
 
 exports.packages = packages;
 
 exports.getPackages = async () => {
+
+	const pixi = {
+		name_version: packages[3],
+		src_hash: sha256(await fetch('https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js').then(r => r.text())),
+		urls: ['https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js']
+	};
 
 	const p5 = {
 		name_version: packages[0],
@@ -36,6 +43,6 @@ exports.getPackages = async () => {
 	};
 
 	return {
-		p5, regl, three,
+		p5, regl, three, pixi
 	};
 };

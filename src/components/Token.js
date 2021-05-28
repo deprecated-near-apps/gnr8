@@ -18,12 +18,13 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	useEffect(() => {
 		if (!token) return;
-		const { codeId, codeSrc, series_args } = token;
-		dispatch(loadCodeFromSrc(codeId, codeSrc, series_args));
-		const { params: { owner } } = getParams(codeSrc);
+		const { codeId: id, codeSrc: src, series_args, owner_id, num_transfers } = token;
+		dispatch(loadCodeFromSrc({ id, src, owner_id, args: series_args, num_transfers }));
+		const { params: { mint, owner } } = getParams(src);
 		const args = {};
+		Object.entries(mint).forEach(([name], i) => args[name] = token.series_args.mint[i]);
 		Object.entries(owner).forEach(([name], i) => args[name] = token.series_args.owner[i]);
-		setState({ ...state, owner, args });
+		setState({ ...state, mint, owner, args });
 	}, [token]);
 
 	if (!token) return null;
@@ -41,7 +42,10 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		setState({ ...state, args: newArgs });
 		let newCode = token.codeSrc;
 		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-		dispatch(loadCodeFromSrc(token.codeId, newCode));
+		const { owner_id, num_transfers } = token
+		dispatch(loadCodeFromSrc({
+			id: token.codeId, src: newCode, owner_id, num_transfers
+		}));
 	};
 
 	const handleUpdate = async () => {

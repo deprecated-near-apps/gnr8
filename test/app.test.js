@@ -148,32 +148,79 @@ describe('deploy contract ' + contractName, () => {
 
 
 	test('contract owner adds packages', async () => {
-		const { three, regl, p5 } = await getPackages();
-		await contractAccount.functionCall(contractId, 'add_package', p5, GAS, parseNearAmount('1'));
-		await contractAccount.functionCall(contractId, 'add_package', three, GAS, parseNearAmount('1'));
-		await contractAccount.functionCall(contractId, 'add_package', regl, GAS, parseNearAmount('1'));
+		const { three, regl, p5, pixi } = await getPackages();
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'add_package',
+			args: p5,
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'add_package',
+			args: three,
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'add_package',
+			args: regl,
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'add_package',
+			args: pixi,
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
 		const getRegl = await contractAccount.viewFunction(contractId, 'get_package', { name_version: regl.name_version });
 		expect(getRegl.src_hash).toEqual(regl.src_hash);
 	});
 
 	test('contract owner creates series', async () => {
-		await contractAccount.functionCall(contractId, 'series_create', exampleArgs[0], GAS, parseNearAmount('0.9'));
-		await contractAccount.functionCall(contractId, 'series_update', srcUpdateArgs[0], GAS);
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_create',
+			args: exampleArgs[0],
+			gas: GAS,
+			attachedDeposit:  parseNearAmount('0.9')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_update',
+			args: srcUpdateArgs[0],
+			gas: GAS,
+		});
 		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[0].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[0].src);
 	});
 
 	test('contract owner creates series and approves sale', async () => {
-		await contractAccount.functionCall(contractId, 'series_create_and_approve', {
-			...exampleArgs[2],
-			account_id: marketId,
-			msg: JSON.stringify({
-				sale_conditions: [
-					{ ft_token_id: "near", price: parseNearAmount('1')}
-				]
-			})
-		}, GAS, parseNearAmount('1'));
-		await contractAccount.functionCall(contractId, 'series_update', srcUpdateArgs[2], GAS);
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_create_and_approve',
+			args: {
+				...exampleArgs[2],
+				account_id: marketId,
+				msg: JSON.stringify({
+					sale_conditions: [
+						{ ft_token_id: "near", price: parseNearAmount('1')}
+					]
+				})
+			},
+			gas: GAS,
+			attachedDeposit:  parseNearAmount('1')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_update',
+			args: srcUpdateArgs[2],
+			gas: GAS,
+		});
 
 		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[2].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[2].src);
@@ -189,12 +236,23 @@ describe('deploy contract ' + contractName, () => {
 	test('contract owner mints NFT in series', async () => {
 		const token_id = tokenIds[0];
 
-		const costEstimate = await contractAccount.functionCall(contractId, 'estimate_mint_cost', args1, GAS);
+		const costEstimate = await contractAccount.functionCall({
+			contractId,
+			methodName: 'estimate_mint_cost',
+			args: args1,
+			gas: GAS,
+		});
 		const deposit = Buffer.from(costEstimate?.status?.SuccessValue, 'base64').toString('utf-8');
 		
 		const bytesBefore = await getAccountBytes(contractId);
 		
-		await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, deposit);
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'nft_mint',
+			args: args1,
+			gas: GAS,
+			attachedDeposit: deposit
+		});
 		
 		const bytesAfter = await getAccountBytes(contractId);
 
@@ -208,7 +266,13 @@ describe('deploy contract ' + contractName, () => {
 
 	test('contract owner tries to mint nft with duplicate args', async () => {
 		try {
-			await contractAccount.functionCall(contractId, 'nft_mint', args1, GAS, parseNearAmount('1'));
+			await contractAccount.functionCall({
+				contractId,
+				methodName: 'nft_mint',
+				args: args1,
+				gas: GAS,
+				attachedDeposit: parseNearAmount('1')
+			});
 			expect(false);
 		} catch (e) {
 			expect(/using those args already exists/gi.test(e.toString()));
@@ -217,12 +281,18 @@ describe('deploy contract ' + contractName, () => {
 
 	test('contract owner can update their owner args', async () => {
 		const token_id = tokenIds[0];
-		await contractAccount.functionCall(contractId, 'update_token_owner_args', {
-			token_id,
-			owner_args: {
-				angleSpeed: '0.1'
-			}
-		}, GAS, parseNearAmount('1'));
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'update_token_owner_args',
+			args: {
+				token_id,
+				owner_args: {
+					angleSpeed: '0.1'
+				}
+			},
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
 		const { token, src } = await getTokenAndSrc(token_id);
 		expect(token.series_args.owner[0]).toEqual('0.1');
 	});
@@ -230,7 +300,13 @@ describe('deploy contract ' + contractName, () => {
 	test('contract owner tries to mint more than supply', async () => {
 		try {
 			/// fails because of max_supply
-			await contractAccount.functionCall(contractId, 'nft_mint', args2, GAS, parseNearAmount('1'));
+			await contractAccount.functionCall({
+				contractId,
+				methodName: 'nft_mint',
+				args: args2,
+				gas: GAS,
+				attachedDeposit: parseNearAmount('1')
+			});
 			expect(false);
 		} catch (e) {
 			expect(/Cannot mint anymore/gi.test(e.toString()));
@@ -240,15 +316,32 @@ describe('deploy contract ' + contractName, () => {
 
 
 	test('owner creates NFT series', async () => {
-		await contractAccount.functionCall(contractId, 'series_create', exampleArgs[1], GAS, parseNearAmount('1'));
-		await contractAccount.functionCall(contractId, 'series_update', srcUpdateArgs[1], GAS);
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_create',
+			args: exampleArgs[1],
+			gas: GAS,
+			attachedDeposit: parseNearAmount('1')
+		});
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_update',
+			args: srcUpdateArgs[1],
+			gas: GAS,
+		});
 		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[1].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[1].src);
 	});
 
 	test('alice CANNOT purchase lazy minted NFT', async () => {
 		try {
-			await alice.functionCall(marketId, 'offer', lazyArgs, GAS, parseNearAmount('1.1'));
+			await alice.functionCall({
+				contractId: marketId,
+				methodName: 'offer',
+				args: lazyArgs,
+				gas: GAS,
+				attachedDeposit: parseNearAmount('1.1')
+			});
 			expect(false);
 		} catch(e) {
 			console.warn(e);
@@ -260,15 +353,21 @@ describe('deploy contract ' + contractName, () => {
 		/// deposit = storagePerSale + 0.1 N to cover approval account_ids in the NFT contract
 		const deposit = new BN(storagePerSale).add(new BN(parseNearAmount('0.1'))).toString();
 
-		await contractAccount.functionCall(contractId, 'series_approve', {
-			series_name: reglExample2.series_name,
-			account_id: marketId,
-			msg: JSON.stringify({
-				sale_conditions: [
-					{ ft_token_id: "near", price: parseNearAmount('1')}
-				]
-			})
-		}, GAS, deposit);
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'series_approve',
+			args: {
+				series_name: reglExample2.series_name,
+				account_id: marketId,
+				msg: JSON.stringify({
+					sale_conditions: [
+						{ ft_token_id: "near", price: parseNearAmount('1')}
+					]
+				})
+			},
+			gas: GAS,
+			attachedDeposit: deposit
+		});
 
 		const get_sales = await contractAccount.viewFunction(marketId, 'get_sales', {
 			nft_contract_id: contractId,
@@ -298,12 +397,23 @@ describe('deploy contract ' + contractName, () => {
 	test('alice purchases lazy minted NFT', async () => {
 		console.log('\n\n Market Balance:', await getAccountBalance(marketId), '\n\n');
 
-		const costEstimate = await contractAccount.functionCall(contractId, 'estimate_mint_cost', {
-			series_mint_args: JSON.parse(lazyArgs.memo)
-		}, GAS);
+		const costEstimate = await contractAccount.functionCall({
+			contractId,
+			methodName: 'estimate_mint_cost',
+			args: {
+				series_mint_args: JSON.parse(lazyArgs.memo)
+			},
+			gas: GAS,
+		});
 		const deposit = Buffer.from(costEstimate?.status?.SuccessValue, 'base64').toString('utf-8');
 
-		await alice.functionCall(marketId, 'offer', lazyArgs, GAS, new BN(parseNearAmount('1')).add(new BN(deposit)).toString());
+		await alice.functionCall({
+			contractId: marketId,
+			methodName: 'offer',
+			args: lazyArgs,
+			gas: GAS,
+			attachedDeposit: new BN(parseNearAmount('1')).add(new BN(deposit)).toString()
+		});
 		console.log('\n\n Market Balance:', await getAccountBalance(marketId), '\n\n');
 
 		const tokens = await alice.viewFunction(contractId, 'nft_tokens_for_owner', {

@@ -18,7 +18,7 @@ export const Frame = ({
 				{
 					menu && <>
 						{
-							sales.length === 1 && <>
+							sales.length === 1 && !!sales[0] && <>
 								{params ?
 									<div className="top-bar"
 										onClick={() => history.push('/mint/' + codeId)}

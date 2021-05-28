@@ -13,7 +13,9 @@ export const Series = ({ dispatch, views, account }) => {
 
 	useEffect(() => {
 		if (!series.length) return;
-		series.forEach(({ codeId, codeSrc }) => dispatch(loadCodeFromSrc(codeId, codeSrc)));
+		series.forEach(({ codeId: id, codeSrc: src, owner_id }) => dispatch(loadCodeFromSrc({
+			id, src, owner_id
+		})));
 	}, [series.length]);
 
 	return <>

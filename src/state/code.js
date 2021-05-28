@@ -3,7 +3,7 @@ import { contractId } from './near';
 
 const paramLabels = ['mint', 'owner'];
 
-export const loadCodeFromSrc = (id, src, args) => async ({ getState }) => {
+export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => async ({ getState }) => {
 	const { contractAccount } = getState();
 	const { code, html, css, params } = getParams(src);
 	if (args) {
@@ -15,7 +15,7 @@ export const loadCodeFromSrc = (id, src, args) => async ({ getState }) => {
 			});
 		});
 	}
-	loadCode({id, contractAccount, params, code, html, css });
+	loadCode({id, contractAccount, owner_id, num_transfers, params, code, html, css });
 };
 
 export const getParams = (code) => {
@@ -69,10 +69,19 @@ const iframeTemplate = `
 `;
 
 const packageCache = {};
-export const loadCode = async ({id, contractAccount, params, code, html = '', css = ''}) => {
+export const loadCode = async ({
+	id, contractAccount, params, code, html = '', css = '',
+	owner_id = 'account.near',
+	num_transfers = 0
+}) => {
 	paramLabels.forEach((label) => Object.entries(params[label]).forEach(([k, v]) =>
 		code = code.replace(new RegExp(`{{${k}}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
 	));
+
+	console.log(code.match(/{{OWNER_ID}}/g))
+
+	code = code.replace(/{{OWNER_ID}}/g, `'${owner_id}'`)
+	code = code.replace(/{{NUM_TRANSFERS}}/g, num_transfers)
 	const packages = await Promise.all(params.packages.map(async (name_version) => {
 		if (packageCache[name_version]) {
 			return packageCache[name_version];
