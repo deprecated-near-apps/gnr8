@@ -4,7 +4,11 @@ import { loadCodeFromSrc } from '../state/code';
 import { contractId, marketId, GAS } from '../state/near';
 import {Frame} from './Frame';
 
+const NUM_PER_PAGE = 4
+
 export const Market = ({ dispatch, views, account }) => {
+
+	const [page, setPage] = useState(0)
 
 	const { everything } = views;
 	

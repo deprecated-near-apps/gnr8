@@ -34,7 +34,7 @@
     "scripts": {
         "test:deploy": "yarn dev:deploy && yarn test",
         "dev:deploy": "yarn build:contracts && rm -rf neardev && (near dev-deploy || exit 0) && yarn patch:config",
-        "build:contracts": "cd contracts/nft-simple && ./build.sh && cd ../.. && cd contracts/market-simple && ./build.sh && cd ../.. && cd contracts/ft && ./build.sh && cd ../..",
+        "build:contracts": "cd contracts/nft-simple && ./build.sh && cd ../.. && cd contracts/market-simple && ./build.sh && cd ../..",
         "patch:config": "node ./utils/patch-config.js",
         "test": "cross-env REACT_APP_ENV=dev jest app.test.js --useStderr",
         "prestart": "rm -rf ./parcel-cache",
