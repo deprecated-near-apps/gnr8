@@ -164,7 +164,7 @@ impl NonFungibleTokenCore for Contract {
 
             let balance_u128 = u128::from(balance);
             let mut payout: Payout = HashMap::new();
-            for (k, v) in royalty.into_iter() {
+            for (k, v) in royalty.iter() {
                 let key = k.clone();
                 if key != owner_id {
                     payout.insert(key, royalty_to_payout(*v, balance_u128));
@@ -361,7 +361,7 @@ impl NonFungibleTokenResolver for Contract {
         }
 
         let mut token = if let Some(token) = self.tokens_by_id.get(&token_id) {
-            if &token.owner_id != &receiver_id {
+            if token.owner_id != receiver_id {
                 // The token is not owner by the receiver anymore. Can't return it.
                 refund_approved_account_ids(owner_id, &approved_account_ids);
                 return true;

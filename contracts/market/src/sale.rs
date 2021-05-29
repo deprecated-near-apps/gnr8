@@ -287,7 +287,7 @@ impl Contract {
         ft_token_id: ValidAccountId,
     ) {
         let contract_id: AccountId = nft_contract_id.into();
-        let contract_and_token_id = format!("{}{}{}", contract_id.clone(), DELIMETER, token_id.clone());
+        let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         // remove bid before proceeding to process purchase
         let mut sale = self.sales.get(&contract_and_token_id).expect("No sale");
         let mut bids = sale.bids.unwrap_or_default();
@@ -302,7 +302,7 @@ impl Contract {
             ft_token_id.into(),
             None,
             bid.price,
-            bid.owner_id.clone(),
+            bid.owner_id,
         );
     }
 

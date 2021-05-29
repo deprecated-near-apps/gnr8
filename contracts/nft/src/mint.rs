@@ -186,7 +186,7 @@ impl Contract {
 
         // insert token like normal
         let token = Token {
-            owner_id: owner_id.clone(),
+            owner_id,
             approved_account_ids: Default::default(),
             next_approval_id: 0,
         };

@@ -109,11 +109,10 @@ impl Contract {
     /// only owner
     pub fn add_ft_token_ids(&mut self, ft_token_ids: Vec<ValidAccountId>) -> Vec<bool> {
         self.assert_owner();
-        let mut added = vec![];
-        for ft_token_id in ft_token_ids {
-            added.push(self.ft_token_ids.insert(ft_token_id.as_ref()));
-        }
-        added
+        ft_token_ids
+            .into_iter()
+            .map(|ft_token_id| self.ft_token_ids.insert(ft_token_id.as_ref()))
+            .collect()
     }
 
     /// TODO remove token (should check if sales can complete even if owner stops supporting token type)
@@ -144,11 +143,7 @@ impl Contract {
         let owner_id = env::predecessor_account_id();
         let mut amount = self.storage_deposits.remove(&owner_id).unwrap_or(0);
         let sales = self.by_owner_id.get(&owner_id);
-        let len = if sales.is_some() {
-            sales.unwrap().len()
-        } else {
-            0
-        };
+        let len = sales.map(|s| s.len()).unwrap_or(0);
         amount -= u128::from(len) * STORAGE_PER_SALE;
         if amount > 0 {
             Promise::new(owner_id).transfer(amount);
