@@ -87,8 +87,6 @@ impl Contract {
                 StorageKey::TokenPerOwnerInner {
                     account_id_hash: hash_account_id(&account_id),
                 }
-                .try_to_vec()
-                .unwrap(),
             )
         });
         tokens_set.insert(token_id);
