@@ -1,15 +1,15 @@
-use std::collections::HashMap;
 use std::cmp::min;
+use std::collections::HashMap;
 use std::mem::size_of;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, LookupSet, UnorderedMap, UnorderedSet};
-use near_sdk::json_types::{Base64VecU8, ValidAccountId, U64, U128};
+use near_sdk::json_types::{Base64VecU8, ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::IntoStorageKey;
 use near_sdk::{
-    ext_contract,
-    PromiseResult,
-    log, env, near_bindgen, AccountId, Balance, Gas, CryptoHash, PanicOnDefault, Promise, StorageUsage,
+    env, ext_contract, log, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault,
+    Promise, PromiseResult, StorageUsage,
 };
 
 use crate::internal::*;
@@ -71,21 +71,37 @@ pub struct Contract {
 #[derive(BorshSerialize)]
 pub enum StorageKey {
     TokensPerOwner,
-    TokenPerOwnerInner { account_id_hash: CryptoHash },
+    TokenPerOwnerInner {
+        account_id_hash: CryptoHash,
+    },
     TokensById,
     NftMetadata,
     // CUSTOM
     TokenDataById,
     SeriesArgHashes,
     SeriesByName,
-    SeriesApprovedIds { series_name_hash: CryptoHash },
+    SeriesApprovedIds {
+        series_name_hash: CryptoHash,
+    },
     SeriesPerOwner,
-    SeriesPerOwnerInner { account_id_hash: CryptoHash },
+    SeriesPerOwnerInner {
+        account_id_hash: CryptoHash,
+    },
     TokensPerSeries,
-    TokenPerSeriesInner { series_name_hash: CryptoHash },
+    TokenPerSeriesInner {
+        series_name_hash: CryptoHash,
+    },
     PackagesByNameVersion,
     TokensPerPackage,
-    TokenPerPackageInner { package_name_version_hash: CryptoHash },
+    TokenPerPackageInner {
+        package_name_version_hash: CryptoHash,
+    },
+}
+
+impl IntoStorageKey for StorageKey {
+    fn into_storage_key(self) -> Vec<u8> {
+        self.try_to_vec().unwrap()
+    }
 }
 
 #[near_bindgen]
@@ -93,25 +109,22 @@ impl Contract {
     #[init]
     pub fn new(owner_id: ValidAccountId, metadata: NFTMetadata) -> Self {
         let mut this = Self {
-            tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
-            tokens_by_id: UnorderedMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
-           
+            tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner),
+            tokens_by_id: UnorderedMap::new(StorageKey::TokensById),
+
             owner_id: owner_id.into(),
             extra_storage_in_bytes_per_token: 0,
-            metadata: LazyOption::new(
-                StorageKey::NftMetadata.try_to_vec().unwrap(),
-                Some(&metadata),
-            ),
+            metadata: LazyOption::new(StorageKey::NftMetadata, Some(&metadata)),
 
             // CUSTOM
-            token_data_by_id: LookupMap::new(StorageKey::TokenDataById.try_to_vec().unwrap()),
-            series_arg_hashes: LookupSet::new(StorageKey::SeriesArgHashes.try_to_vec().unwrap()),
-            series_by_name: UnorderedMap::new(StorageKey::SeriesByName.try_to_vec().unwrap()),
-            series_per_owner: LookupMap::new(StorageKey::SeriesPerOwner.try_to_vec().unwrap()),
-            tokens_per_series: LookupMap::new(StorageKey::TokensPerSeries.try_to_vec().unwrap()),
+            token_data_by_id: LookupMap::new(StorageKey::TokenDataById),
+            series_arg_hashes: LookupSet::new(StorageKey::SeriesArgHashes),
+            series_by_name: UnorderedMap::new(StorageKey::SeriesByName),
+            series_per_owner: LookupMap::new(StorageKey::SeriesPerOwner),
+            tokens_per_series: LookupMap::new(StorageKey::TokensPerSeries),
 
-            packages_by_name_version: UnorderedMap::new(StorageKey::PackagesByNameVersion.try_to_vec().unwrap()),
-            tokens_per_package: LookupMap::new(StorageKey::TokensPerPackage.try_to_vec().unwrap()),
+            packages_by_name_version: UnorderedMap::new(StorageKey::PackagesByNameVersion),
+            tokens_per_package: LookupMap::new(StorageKey::TokensPerPackage),
 
             contract_royalty: 0,
         };
@@ -124,13 +137,9 @@ impl Contract {
     fn measure_min_token_storage_cost(&mut self) {
         let initial_storage_usage = env::storage_usage();
         let tmp_account_id = "a".repeat(64);
-        let u = UnorderedSet::new(
-            StorageKey::TokenPerOwnerInner {
-                account_id_hash: hash_account_id(&tmp_account_id),
-            }
-            .try_to_vec()
-            .unwrap(),
-        );
+        let u = UnorderedSet::new(StorageKey::TokenPerOwnerInner {
+            account_id_hash: hash_account_id(&tmp_account_id),
+        });
         self.tokens_per_owner.insert(&tmp_account_id, &u);
 
         let tokens_per_owner_entry_in_bytes = env::storage_usage() - initial_storage_usage;
@@ -146,7 +155,10 @@ impl Contract {
 
     pub fn set_contract_royalty(&mut self, contract_royalty: u32) {
         self.assert_owner();
-        assert!(contract_royalty <= CONTRACT_ROYALTY_CAP, "Contract royalties limited to 10% for owner");
+        assert!(
+            contract_royalty <= CONTRACT_ROYALTY_CAP,
+            "Contract royalties limited to 10% for owner"
+        );
         self.contract_royalty = contract_royalty;
     }
 

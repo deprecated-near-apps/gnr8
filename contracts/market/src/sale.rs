@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::promise_result_as_success;
+use near_sdk::{log, promise_result_as_success};
 
 /// measuring how many royalties can be paid
 const GAS_FOR_FT_TRANSFER: Gas = 5_000_000_000_000;
@@ -191,7 +191,7 @@ impl Contract {
                 .and_then(|payout| {
                     // gas to do 10 FT transfers (and definitely 10 NEAR transfers)
                     if payout.len() + bids.len() > 10 || payout.is_empty() {
-                        env::log("Cannot have more than 10 royalties and sale.bids refunds".as_bytes());
+                        log!("Cannot have more than 10 royalties and sale.bids refunds");
                         None
                     } else {
                         // TODO off by 1 e.g. payouts are fractions of 3333 + 3333 + 3333
@@ -287,7 +287,7 @@ impl Contract {
         ft_token_id: ValidAccountId,
     ) {
         let contract_id: AccountId = nft_contract_id.into();
-        let contract_and_token_id = format!("{}{}{}", contract_id.clone(), DELIMETER, token_id.clone());
+        let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         // remove bid before proceeding to process purchase
         let mut sale = self.sales.get(&contract_and_token_id).expect("No sale");
         let mut bids = sale.bids.unwrap_or_default();
@@ -302,7 +302,7 @@ impl Contract {
             ft_token_id.into(),
             None,
             bid.price,
-            bid.owner_id.clone(),
+            bid.owner_id,
         );
     }
 

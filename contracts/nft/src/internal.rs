@@ -87,8 +87,6 @@ impl Contract {
                 StorageKey::TokenPerOwnerInner {
                     account_id_hash: hash_account_id(&account_id),
                 }
-                .try_to_vec()
-                .unwrap(),
             )
         });
         tokens_set.insert(token_id);
@@ -162,7 +160,7 @@ impl Contract {
         self.tokens_by_id.insert(token_id, &new_token);
 
         if let Some(memo) = memo {
-            env::log(format!("Memo: {}", memo).as_bytes());
+            log!("Memo: {}", memo);
         }
 
         token

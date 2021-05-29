@@ -3,8 +3,8 @@ use near_sdk::collections::{LookupMap, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::{ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
-    assert_one_yocto, env, ext_contract, near_bindgen, AccountId, Balance, Gas, PanicOnDefault,
-    Promise, PromiseOrValue, CryptoHash,
+    assert_one_yocto, env, ext_contract, near_bindgen, AccountId, Balance, CryptoHash, Gas,
+    IntoStorageKey, PanicOnDefault, Promise, PromiseOrValue,
 };
 use std::cmp::min;
 use std::collections::HashMap;
@@ -75,22 +75,28 @@ pub enum StorageKey {
     StorageDeposits,
 }
 
+impl IntoStorageKey for StorageKey {
+    fn into_storage_key(self) -> Vec<u8> {
+        self.try_to_vec().unwrap()
+    }
+}
+
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(owner_id: ValidAccountId, ft_token_ids:Option<Vec<ValidAccountId>>) -> Self {
+    pub fn new(owner_id: ValidAccountId, ft_token_ids: Option<Vec<ValidAccountId>>) -> Self {
         let mut this = Self {
             owner_id: owner_id.into(),
-            sales: UnorderedMap::new(StorageKey::Sales.try_to_vec().unwrap()),
-            by_owner_id: LookupMap::new(StorageKey::ByOwnerId.try_to_vec().unwrap()),
-            by_nft_contract_id: LookupMap::new(StorageKey::ByNFTContractId.try_to_vec().unwrap()),
-            by_nft_token_type: LookupMap::new(StorageKey::ByNFTTokenType.try_to_vec().unwrap()),
-            ft_token_ids: UnorderedSet::new(StorageKey::FTTokenIds.try_to_vec().unwrap()),
-            storage_deposits: LookupMap::new(StorageKey::StorageDeposits.try_to_vec().unwrap()),
+            sales: UnorderedMap::new(StorageKey::Sales),
+            by_owner_id: LookupMap::new(StorageKey::ByOwnerId),
+            by_nft_contract_id: LookupMap::new(StorageKey::ByNFTContractId),
+            by_nft_token_type: LookupMap::new(StorageKey::ByNFTTokenType),
+            ft_token_ids: UnorderedSet::new(StorageKey::FTTokenIds),
+            storage_deposits: LookupMap::new(StorageKey::StorageDeposits),
         };
         // support NEAR by default
         this.ft_token_ids.insert(&"near".to_string());
-        
+
         if let Some(ft_token_ids) = ft_token_ids {
             for ft_token_id in ft_token_ids {
                 this.ft_token_ids.insert(ft_token_id.as_ref());
@@ -100,14 +106,13 @@ impl Contract {
         this
     }
 
-    /// only owner 
+    /// only owner
     pub fn add_ft_token_ids(&mut self, ft_token_ids: Vec<ValidAccountId>) -> Vec<bool> {
         self.assert_owner();
-        let mut added = vec![];
-        for ft_token_id in ft_token_ids {
-            added.push(self.ft_token_ids.insert(ft_token_id.as_ref()));
-        }
-        added
+        ft_token_ids
+            .into_iter()
+            .map(|ft_token_id| self.ft_token_ids.insert(ft_token_id.as_ref()))
+            .collect()
     }
 
     /// TODO remove token (should check if sales can complete even if owner stops supporting token type)
@@ -138,11 +143,7 @@ impl Contract {
         let owner_id = env::predecessor_account_id();
         let mut amount = self.storage_deposits.remove(&owner_id).unwrap_or(0);
         let sales = self.by_owner_id.get(&owner_id);
-        let len = if sales.is_some() {
-            sales.unwrap().len()
-        } else {
-            0
-        };
+        let len = sales.map(|s| s.len()).unwrap_or(0);
         amount -= u128::from(len) * STORAGE_PER_SALE;
         if amount > 0 {
             Promise::new(owner_id).transfer(amount);

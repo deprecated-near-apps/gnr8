@@ -88,7 +88,6 @@ trait NonFungibleTokenResolver {
 
 #[near_bindgen]
 impl NonFungibleTokenCore for Contract {
-
     #[payable]
     fn nft_transfer(
         &mut self,
@@ -123,43 +122,44 @@ impl NonFungibleTokenCore for Contract {
         balance: Option<U128>,
         max_len_payout: Option<u32>,
     ) -> Option<Payout> {
-
         assert_at_least_one_yocto();
         let sender_id = env::predecessor_account_id();
 
-        let owner_id: AccountId;
-        let mut token_id = token_id;       
-        let mut approved_account_ids: HashMap<AccountId, U64> = HashMap::new();
-
         // should mint token from series for specified receiver_id
-        if let Some(memo) = memo {
-            let series_mint_args: SeriesMintArgs = near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesMintArgs");
+        let (owner_id, token_id, approved_account_ids) = if let Some(memo) = memo {
+            let series_mint_args: SeriesMintArgs =
+                near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesMintArgs");
             let (new_token_id, series_owner_id) = self.nft_mint(series_mint_args, Some(true));
-            owner_id = series_owner_id;
-            token_id = new_token_id;
+            (series_owner_id, new_token_id, HashMap::default())
         } else {
             let previous_token = self.internal_transfer(
                 &sender_id,
                 receiver_id.as_ref(),
                 &token_id,
                 approval_id,
-                memo.clone(),
+                memo,
             );
-            owner_id = previous_token.owner_id;
-            approved_account_ids = previous_token.approved_account_ids;
+            (
+                previous_token.owner_id,
+                token_id,
+                previous_token.approved_account_ids,
+            )
         };
-        
+
         let mut token_data = self.token_data_by_id.get(&token_id).expect("No token data");
-        
+
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
-        
+
         let mut total_perpetual = 0;
         let payout = if let Some(balance) = balance {
-            let royalty = token_data.royalty.clone();
+            let royalty = &token_data.royalty;
 
             if let Some(max_len_payout) = max_len_payout {
-                assert!(royalty.len() as u32 <= max_len_payout, "Market cannot payout to that many receivers");
+                assert!(
+                    royalty.len() as u32 <= max_len_payout,
+                    "Market cannot payout to that many receivers"
+                );
             }
 
             let balance_u128 = u128::from(balance);
@@ -173,15 +173,24 @@ impl NonFungibleTokenCore for Contract {
             }
             // payout to contract owner - may be previous token owner -> then they get remainder of balance
             if self.contract_royalty > 0 && self.owner_id != owner_id {
-                payout.insert(self.owner_id.clone(), royalty_to_payout(self.contract_royalty, balance_u128));
+                payout.insert(
+                    self.owner_id.clone(),
+                    royalty_to_payout(self.contract_royalty, balance_u128),
+                );
                 total_perpetual += self.contract_royalty;
             }
-            assert!(total_perpetual <= MINTER_ROYALTY_CAP + CONTRACT_ROYALTY_CAP, "Royalties should not be more than caps");
+            assert!(
+                total_perpetual <= MINTER_ROYALTY_CAP + CONTRACT_ROYALTY_CAP,
+                "Royalties should not be more than caps"
+            );
             // payout to previous owner
-            payout.insert(owner_id.clone(), royalty_to_payout(10000 - total_perpetual, balance_u128));
+            payout.insert(
+                owner_id.clone(),
+                royalty_to_payout(10000 - total_perpetual, balance_u128),
+            );
 
-            env::log(format!("total_perpetual {:?}", total_perpetual).as_bytes());
-            env::log(format!("Payouts {:?}", payout).as_bytes());
+            log!("total_perpetual {:?}", total_perpetual);
+            log!("Payouts {:?}", payout);
 
             Some(payout)
         } else {
@@ -192,10 +201,7 @@ impl NonFungibleTokenCore for Contract {
         self.token_data_by_id.insert(&token_id, &token_data);
 
         // refund any NEAR if storage reqs changed
-        refund_approved_account_ids(
-            owner_id,
-            &approved_account_ids,
-        );
+        refund_approved_account_ids(owner_id, &approved_account_ids);
 
         payout
     }
@@ -317,25 +323,18 @@ impl NonFungibleTokenCore for Contract {
     }
 
     fn nft_token(&self, token_id: TokenId) -> Option<JsonToken> {
-        if let Some(token) = self.tokens_by_id.get(&token_id) {
-            let TokenData {
-                series_args,
-                royalty,
-                created_at,
-                num_transfers
-            } = self.token_data_by_id.get(&token_id).expect("No token data");
-            Some(JsonToken {
+        self.tokens_by_id.get(&token_id).map(|token| {
+            let token_data = self.token_data_by_id.get(&token_id).expect("No token data");
+            JsonToken {
                 token_id,
                 owner_id: token.owner_id,
                 approved_account_ids: token.approved_account_ids,
-                series_args,
-                royalty,
-                created_at,
-                num_transfers,
-            })
-        } else {
-            None
-        }
+                series_args: token_data.series_args,
+                royalty: token_data.royalty,
+                created_at: token_data.created_at,
+                num_transfers: token_data.num_transfers,
+            }
+        })
     }
 }
 
@@ -362,7 +361,7 @@ impl NonFungibleTokenResolver for Contract {
         }
 
         let mut token = if let Some(token) = self.tokens_by_id.get(&token_id) {
-            if &token.owner_id != &receiver_id {
+            if token.owner_id != receiver_id {
                 // The token is not owner by the receiver anymore. Can't return it.
                 refund_approved_account_ids(owner_id, &approved_account_ids);
                 return true;
