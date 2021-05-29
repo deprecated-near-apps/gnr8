@@ -162,7 +162,7 @@ impl Contract {
         self.tokens_by_id.insert(token_id, &new_token);
 
         if let Some(memo) = memo {
-            env::log(format!("Memo: {}", memo).as_bytes());
+            log!("Memo: {}", memo);
         }
 
         token

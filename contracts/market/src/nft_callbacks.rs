@@ -46,7 +46,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             conditions.insert(ft_token_id.into(), price.unwrap_or(U128(0)));
         }
 
-        // env::log(format!("add_sale for owner: {}", &owner_id).as_bytes());
+        // log!("add_sale for owner: {}", &owner_id);
 
         let contract_and_token_id = format!("{}{}{}", nft_contract_id, DELIMETER, token_id);
         self.sales.insert(
@@ -167,7 +167,7 @@ impl NonFungibleSeriesApprovalReceiver for Contract {
             conditions.insert(ft_token_id.into(), price.unwrap_or(U128(0)));
         }
 
-        // env::log(format!("add_sale for owner: {}", &owner_id).as_bytes());
+        // log!("add_sale for owner: {}", &owner_id);
 
         let contract_and_token_id = format!("{}{}{}", nft_contract_id, DELIMETER, series_name);
         self.sales.insert(
