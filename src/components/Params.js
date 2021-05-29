@@ -9,17 +9,17 @@ export const Params = ({ params, args, updateArgs }) => {
 		switch (type) {
 		case 'int':
 			return <div key={name}>
-				<input type="number" step="1" defaultValue={parseInt(value, 10)} onChange={(e) => updateArgs(name, e.target.value)} />
+				<input type="number" step="1" defaultValue={parseInt(JSON.parse(value), 10)} onChange={(e) => updateArgs(name, e.target.value)} />
 				<label>{name}</label>
 			</div>;
 		case 'float':
 			return <div key={name}>
-				<input type="number" step="0.01" defaultValue={parseFloat(value, 10)} onChange={(e) => updateArgs(name, e.target.value)} />
+				<input type="number" step="0.01" defaultValue={parseFloat(JSON.parse(value), 10)} onChange={(e) => updateArgs(name, e.target.value)} />
 				<label>{name}</label>
 			</div>;
 		case 'webgl-float':
 			return <div key={name}>
-				<input type="number" step="0.01" defaultValue={parseFloat(value, 10)} onChange={(e) => {
+				<input type="number" step="0.01" defaultValue={parseFloat(JSON.parse(value), 10)} onChange={(e) => {
 					const input = e.target.value;
 					updateArgs(name, JSON.stringify(input));
 				}} />

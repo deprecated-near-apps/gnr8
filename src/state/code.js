@@ -78,8 +78,6 @@ export const loadCode = async ({
 		code = code.replace(new RegExp(`{{${k}}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
 	));
 
-	console.log(code.match(/{{OWNER_ID}}/g))
-
 	code = code.replace(/{{OWNER_ID}}/g, `'${owner_id}'`)
 	code = code.replace(/{{NUM_TRANSFERS}}/g, num_transfers)
 	const packages = await Promise.all(params.packages.map(async (name_version) => {

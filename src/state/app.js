@@ -23,6 +23,9 @@ const initialState = {
 		sales: [],
 		series: [],
 		packages: [],
+
+		market: [],
+		mint: null,
 	}
 };
 

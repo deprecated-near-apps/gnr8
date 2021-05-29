@@ -27,15 +27,6 @@ export const Collection = ({ dispatch, views, account, near }) => {
 		setLoading(null);
 	};
 	useEffect(mount, []);
-	
-	useEffect(() => {
-		if (!items.length) return;
-		items.forEach(({ codeId: id, codeSrc: src, series_args: args, owner_id, num_transfers }) => {
-			dispatch(loadCodeFromSrc({
-				id, src, args, owner_id, num_transfers
-			}));
-		});
-	}, [items.length]);
 
 	return <>
 	
@@ -46,8 +37,7 @@ export const Collection = ({ dispatch, views, account, near }) => {
 		</center>}
 
 		<div className="gallery">
-			
-			<Frame {...{ items }} />
+			<Frame {...{ dispatch, items }} />
 		</div>
 	</>;
 };

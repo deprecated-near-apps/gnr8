@@ -18,33 +18,23 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	useEffect(() => {
 		if (!token) return;
-		const { codeId: id, codeSrc: src, series_args, owner_id, num_transfers } = token;
-		dispatch(loadCodeFromSrc({ id, src, owner_id, args: series_args, num_transfers }));
+		const { series_args, src } = token
 		const { params: { mint, owner } } = getParams(src);
 		const args = {};
-		Object.entries(mint).forEach(([name], i) => args[name] = token.series_args.mint[i]);
-		Object.entries(owner).forEach(([name], i) => args[name] = token.series_args.owner[i]);
+		Object.entries(mint).forEach(([name], i) => args[name] = series_args.mint[i]);
+		Object.entries(owner).forEach(([name], i) => args[name] = series_args.owner[i]);
 		setState({ ...state, mint, owner, args });
 	}, [token]);
-
-	if (!token) return null;
-
-	const isOwner = token.owner_id === account.accountId;
-	const params = [];
-	const { args, owner } = state;
-	if (owner) {
-		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }));
-	}
 
 	const updateArgs = (name, value) => {
 		if (!value.length) return;
 		const newArgs = { ...args, [name]: value };
 		setState({ ...state, args: newArgs });
-		let newCode = token.codeSrc;
+		let newCode = token.src;
 		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
 		const { owner_id, num_transfers } = token
 		dispatch(loadCodeFromSrc({
-			id: token.codeId, src: newCode, owner_id, num_transfers
+			id: token.id, src: newCode, owner_id, num_transfers
 		}));
 	};
 
@@ -115,6 +105,18 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		});
 	};
 
+
+	if (!token) return null;
+
+	const isOwner = token.owner_id === account.accountId;
+	const params = [];
+	const { args, owner } = state;
+	if (owner) {
+		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }));
+	}
+
+	console.log(args)
+	
 	const argVals = Object.values(state.args);
 	const isChanged = argVals.length && JSON.stringify(token.series_args.owner) !== JSON.stringify(argVals);
 
@@ -146,7 +148,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		</div>
 
 		<div className="gallery">
-			<Frame {...{ items: [token], menu: !isOwner }} />
+			<Frame {...{ dispatch, items: [token], menu: !isOwner }} />
 		</div>
 		{
 			isOwner && <div className="owner-params">

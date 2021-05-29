@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { loadEverything } from '../state/views';
-import { loadCodeFromSrc } from '../state/code';
+import { loadEverything, loadMarket } from '../state/views';
 import { contractId, marketId, GAS } from '../state/near';
 import {Frame} from './Frame';
 
@@ -10,10 +9,10 @@ export const Market = ({ dispatch, views, account }) => {
 
 	const [page, setPage] = useState(0)
 
-	const { everything } = views;
+	const { market } = views;
 	
 	useEffect(() => {
-		dispatch(loadEverything());
+		dispatch(loadMarket());
 	}, []);
 
 	const handleOffer = async (item) => {
@@ -27,18 +26,9 @@ export const Market = ({ dispatch, views, account }) => {
 		}, GAS, item.sales[0].conditions.near);
 	};
 
-	useEffect(() => {
-		if (!everything.length) return;
-		everything.forEach(({ codeId: id, codeSrc: src, series_args: args, owner_id, num_transfers }) => {
-			dispatch(loadCodeFromSrc({
-				id, src, args, owner_id, num_transfers
-			}));
-		});
-	}, [everything.length]);
-
 	return <>
 		<div className="gallery">
-			<Frame {...{ items: everything, handleOffer }} />
+			<Frame {...{ dispatch, items: market, handleOffer }} />
 		</div>
 	</>;
 };

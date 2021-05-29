@@ -1,31 +1,52 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { loadCodeFromSrc } from '../state/code';
 import { formatNearAmount } from '../utils/near-utils';
 
 export const Frame = ({
+	dispatch,
 	items,
 	menu = true,
 	handleOffer = () => {}
 }) => {
 	return items.map((item) => {
 
-		const { codeId, owner_id, params, sales = [], claimed = 0 } = item;
+		let {
+			id, src,
+			owner_id, is_sale, is_series, is_token,
+			conditions,
+			series: { params, claimed = 0 } = {},
+			token: {
+				series_args: args,
+				num_transfers,
+			} = {},
+		} = item;
 
-		// console.log(codeId, params, sales)
+		if (is_token) {
+			args = item.series_args
+		}
+
+		useEffect(() => {
+			dispatch(loadCodeFromSrc({
+				id, src, args, owner_id, num_transfers
+			}));
+		}, []);
+
+		console.log(item)
 
 		return (
-			<div key={codeId} className="iframe">
-				<iframe {...{ id: codeId }} />
+			<div key={id} className="iframe">
+				<iframe {...{ id }} />
 				{
 					menu && <>
 						{
-							sales.length === 1 && !!sales[0] && <>
-								{params ?
+							is_sale && <>
+								{is_series ?
 									<div className="top-bar"
-										onClick={() => history.push('/mint/' + codeId)}
+										onClick={() => history.push('/mint/' + id)}
 									>
 										<div>{params.max_supply - claimed} / {params.max_supply}</div>
 										{claimed < params.max_supply &&
-                                            <div>{formatNearAmount(sales[0].conditions.near)} Ⓝ</div>
+                                            <div>{formatNearAmount(conditions.near)} Ⓝ</div>
 										}
 									</div>
 									:
@@ -33,16 +54,16 @@ export const Frame = ({
 										onClick={() => handleOffer(item)}
 									>
 										<div>Buy</div>
-										<div>{formatNearAmount(sales[0].conditions.near)} Ⓝ</div>
+										<div>{formatNearAmount(conditions.near)} Ⓝ</div>
 									</div>
 								}
 							</>
 						}
 						{ menu !== 'onlyTop' && <div
 							className="bottom-bar"
-							onClick={() => params ? history.push('/mint/' + codeId) : history.push('/token/' + codeId)}
+							onClick={() => is_series ? history.push('/mint/' + id) : history.push('/token/' + id)}
 						>
-							<div>{codeId}</div>
+							<div>{id}</div>
 							<div>{owner_id}</div>
 						</div>}
 					</>

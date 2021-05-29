@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
-import { loadSales, getTokensForSeries } from '../state/views';
+import { loadMint, getTokensForSeries } from '../state/views';
 import { Menu } from './Menu';
 import { Params } from './Params';
 import { Frame } from './Frame';
@@ -9,29 +9,20 @@ import { Frame } from './Frame';
 export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 	const { mintMenu } = app;
-	const { salesBySeries } = views;
+	const { mint: item } = views;
 
-	const [state, setState] = useState({});
+	const [state, setState] = useState({ args: {} });
+
+	const seriesName = path.matchAll(/\/mint\/(.+)/gi).next()?.value[1]
 
 	useEffect(() => {
-		dispatch(loadSales());
+		dispatch(loadMint(seriesName));
 	}, []);
 
-	useEffect(() => {
-		if (!salesBySeries?.length) return;
-		const seriesName = path.matchAll(/\/mint\/(.+)/gi).next()?.value[1];
-		const series = salesBySeries.find(({ series_name }) => series_name === seriesName);
-		const sale = series.sales.find(({ token_type }) => seriesName === token_type);
-		setState({ series, sale, args: {} });
-		const { src, owner_id } = series
-		dispatch(loadCodeFromSrc({
-			id: series.series_name, src, owner_id
-		}));
-	}, [salesBySeries]);
-
 	const handleOffer = async () => {
-		const { series, args } = state;
-		if (!series.sales.length) {
+		const { series } = item;
+		const { args } = state;
+		if (series.claimed === series.params.max_supply) {
 			return alert('None left of this series');
 		}
 		const mint = Object.values(args);
@@ -61,57 +52,48 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		}, GAS, parseNearAmount('1.1'));
 	};
 
-	const { series, args = {} } = state;
+	const updateArgs = (name, value) => {
+		if (!value.length) return;
+		const newArgs = { ...args, [name]: value };
+		setState({ args: newArgs });
+		let newCode = item.series.src;
+		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+		dispatch(loadCodeFromSrc({
+			id: item.series.series_name, src: newCode, owner_id: item.owner_id
+		}));
+	};
 
+	let mintMenuOptions = {}
 	const params = [];
-	if (series) {
-		Object.entries(getParams(series.src).params.mint).forEach(([k, v]) => {
-			// mintMenuOptions[k] = () => {
-			// 	const input = window.prompt(`Update ${k}. Use the same format as the default value provided.`, JSON.stringify(v.default));
-			// 	const newArgs = { ...args, [k]: input };
-			// 	setState({ ...state, args: newArgs });
-			// 	let newCode = series.src;
-			// 	Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-			// 	dispatch(loadCodeFromSrc(series.series_name, newCode));
-			// };
-
+	if (item) {
+		Object.entries(getParams(item.series.src).params.mint).forEach(([k, v]) => {
 			params.push({
 				name: k,
 				default: v.default,
 				type: v.type
 			});
 		});
+		mintMenuOptions = {
+			[item.series.series_name]: {
+				frag: <>
+					<div>A itemable series with a total supply of {item.series.params.max_supply}.</div>
+					{ item.series.params.enforce_unique_args &&
+					<div>
+						Each combination of minting parameters below
+						({item.series.params.mint.map((p) => p.name)})
+						must be unique from other minted tokens.
+					</div>}
+					<div>
+						Minting asks for more than list price to pay storage of your unique arguments on chain. You will be refunded any unused NEAR.
+					</div>
+				</>
+			}
+		};
 	} else {
 		return null;
 	}
 
-	const mintMenuOptions = {
-		[series.series_name]: {
-			frag: <>
-				<div>A mintable series with a total supply of {series.params.max_supply}.</div>
-				{ series.params.enforce_unique_args &&
-				<div>
-					Each combination of minting parameters below
-					({params.map((p) => p.name)})
-					must be unique from other minted tokens.
-				</div>}
-				<div>
-					Minting asks for more than list price to pay storage of your unique arguments on chain. You will be refunded any unused NEAR.
-				</div>
-			</>
-		}
-	};
-
-	const updateArgs = (name, value) => {
-		if (!value.length) return;
-		const newArgs = { ...args, [name]: value };
-		setState({ ...state, args: newArgs });
-		let newCode = series.src;
-		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
-		dispatch(loadCodeFromSrc({
-			id: series.series_name, src: newCode, owner_id: series.owner_id
-		}));
-	};
+	const { args } = state
 
 	return <>
 		<div className="mint">
@@ -130,7 +112,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			</div>
 
 			<div className="gallery">
-				<Frame {...{items: [series], menu: 'onlyTop' }} />
+				<Frame {...{dispatch, items: [item], menu: 'onlyTop' }} />
 			</div>
 
 			<div className="mint-params">
