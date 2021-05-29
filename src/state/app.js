@@ -21,10 +21,10 @@ const initialState = {
 		tokens: [],
 		token: null,
 		sales: [],
-		series: [],
 		packages: [],
 
 		market: [],
+		series: [],
 		mint: null,
 	}
 };

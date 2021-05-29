@@ -4,6 +4,10 @@ const DELIMETER = '||';
 const SERIES_DELIMETER = ':';
 const HELPER_URL = 'https://helper.nearapi.org/v1/batch/'
 
+// TODO cache series and tokens already seen
+const seriesCache = {};
+const tokenCache = {};
+
 const id2series = (token_id) => token_id.split(SERIES_DELIMETER)[0]
 export const singleBatchCall = async (view, method = 'GET') => {
 	let url = HELPER_URL;
@@ -129,6 +133,42 @@ export const loadMint = (series_name) => async ({ getState, update, dispatch }) 
 	update('views', { mint: sale });
 }
 
+export const loadSeries = () => async ({ getState, update, dispatch }) => {
+	const { contractAccount } = getState()
+	const numSeries = await contractAccount.viewFunction(contractId, 'series_supply', {})
+	const series = await singleBatchCall({
+		contract: contractId,
+		method: 'series_range',
+		args: {},
+		batch: {
+			from_index: '0',
+			limit: numSeries,
+			step: '50', // divides batch above
+			flatten: [],
+		},
+	}, 'POST')
+
+	const seriesClaimed = await singleBatchCall({
+		contract: contractId,
+		method: 'series_range',
+		args: {},
+		batch: {
+			from_index: '0',
+			limit: numSeries,
+			step: '50', // divides batch above
+			flatten: [],
+		},
+	}, 'POST')
+
+	series.forEach((s, i) => {
+		s.claimed = seriesClaimed[i]
+		addCompatFields(s)
+	})
+
+	update('views', { series });
+}
+
+
 ///  TODO upgrade the rest of the views to use api-helper
 export const loadCollection = (owner_id) => async ({ getState, update, dispatch }) => {
 
@@ -139,10 +179,12 @@ const addCompatFields = (tokenOrSeries) => {
 	if (tokenOrSeries.series) {
 		tokenOrSeries.id = tokenOrSeries.token_id;
 		tokenOrSeries.src = tokenOrSeries.series.src;
+		tokenOrSeries.is_token = true
 	} else {
 		const {series_name, src} = tokenOrSeries;
 		tokenOrSeries.id = series_name;
 		tokenOrSeries.src = src;
+		tokenOrSeries.is_series = true
 	}
 };
 export const getToken = (token_id) => async ({ getState, update }) => {
@@ -151,7 +193,7 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 		token_id,
 	});
 	token.is_token = true
-	token.series = await loadSeries(contractAccount, token.series_args.series_name);
+	token.series = await loadSeriesName(contractAccount, token.series_args.series_name);
 	token.sales = [await contractAccount.viewFunction(marketId, 'get_sale', {
 		nft_contract_token: contractId + DELIMETER + token_id
 	})];
@@ -186,7 +228,7 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
 	});
 	await Promise.all(tokensPerOwner.map(async (token) => {
 		token.is_token = true
-		token.series = await loadSeries(contractAccount, token.series_args.series_name);
+		token.series = await loadSeriesName(contractAccount, token.series_args.series_name);
 		// alias for compat with tokens
 		addCompatFields(token);
 	}));
@@ -227,32 +269,8 @@ export const loadEverythingForOwner = (account_id) => async ({ update, getState 
 };
 
 
-const seriesCache = {};
-export const loadSeriesRange = () => async ({ getState, update }) => {
-	const { contractAccount } = getState();
-	const series = await contractAccount.viewFunction(contractId, 'series_names', {
-		from_index: '0',
-		limit: '100'
-	});
 
-	await Promise.all(series.map(async (series) => {
-		const { series_name } = series;
-		series.sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_token_type', {
-			token_type: series_name,
-			from_index: '0',
-			limit: '100'
-		});
-
-		series.claimed = parseInt(await contractAccount.viewFunction(contractId, 'nft_supply_for_series', { series_name }), 10);
-
-		addCompatFields(series);
-		seriesCache[series_name] = series;
-	}));
-	update('views', { series: Object.values(seriesCache) });
-	return { series: Object.values(seriesCache) };
-};
-
-export const loadSeries = async (contractAccount, series_name) => {
+export const loadSeriesName = async (contractAccount, series_name) => {
 	let series = seriesCache[series_name];
 	if (!series) {
 		series = seriesCache[series_name] = await contractAccount.viewFunction(contractId, 'series_data', { series_name });

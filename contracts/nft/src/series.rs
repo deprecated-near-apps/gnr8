@@ -230,6 +230,12 @@ impl Contract {
 
     /// views
 
+    pub fn series_supply(
+        &self,
+    ) -> U64 {
+        U64(self.series_by_name.keys_as_vector().len())
+    }
+
     pub fn series_data(
         &self,
         series_name: SeriesName,
@@ -237,7 +243,7 @@ impl Contract {
         series_to_json(self.series_by_name.get(&series_name).unwrap_or_else(|| panic!("No series {}", series_name)))
     }
 
-    pub fn series_names(
+    pub fn series_range(
         &self,
         from_index: U64,
         limit: U64,
