@@ -286,9 +286,7 @@ describe('deploy contract ' + contractName, () => {
 			methodName: 'update_token_owner_args',
 			args: {
 				token_id,
-				owner_args: {
-					angleSpeed: '0.1'
-				}
+				owner_args: ['0.1']
 			},
 			gas: GAS,
 			attachedDeposit: parseNearAmount('1')

@@ -122,8 +122,6 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	update('views', { market: sales });
 }
 
-
-
 export const loadGallery = () => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState()
 	const numTokens = await contractAccount.viewFunction(contractId, 'nft_total_supply')
@@ -214,26 +212,47 @@ export const loadMint = (series_name) => async ({ getState, update, dispatch }) 
 export const loadSeries = () => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState()
 	const numSeries = await contractAccount.viewFunction(contractId, 'series_supply', {})
-	
-	const [series, seriesClaimed] = await Promise.all([
+	const series = await singleBatchCall({
+		contract: contractId,
+		method: 'series_range',
+		args: {},
+		batch: {
+			from_index: '0',
+			limit: numSeries,
+			step: '50', // divides batch above
+			flatten: [],
+		},
+		sort: {
+			path: 'created_at',
+		}
+	}, 'POST')
+
+	const series_names = series.map((s) => s.series_name)
+	const sales_names = series_names.map((series_name) => contractId + DELIMETER + series_name)
+
+	const [sales, seriesClaimed] = await Promise.all([
 		singleBatchCall({
-			contract: contractId,
-			method: 'series_range',
-			args: {},
+			contract: marketId,
+			method: 'get_sales_batch',
+			args: {
+				sales_names
+			},
 			batch: {
 				from_index: '0',
-				limit: numSeries,
+				limit: sales_names.length.toString(),
 				step: '50', // divides batch above
 				flatten: [],
 			},
 		}, 'POST'),
 		singleBatchCall({
 			contract: contractId,
-			method: 'series_range',
-			args: {},
+			method: 'nft_supply_for_series_batch',
+			args: {
+				series_names
+			},
 			batch: {
 				from_index: '0',
-				limit: numSeries,
+				limit: series_names.length.toString(),
 				step: '50', // divides batch above
 				flatten: [],
 			},
@@ -242,6 +261,10 @@ export const loadSeries = () => async ({ getState, update, dispatch }) => {
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i]
+		if (sales[i]) {
+			s.sale = sales[i]
+			s.is_sale = true
+		}
 		seriesCache[s.series_name] = s
 		addCompatFields(s)
 	})

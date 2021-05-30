@@ -3,7 +3,8 @@ exports.three2 = {
 	series_name: 'three-2-',
 	params: {
 		max_supply: '200',
-		enforce_unique_args: true,
+		enforce_unique_mint_args: true,
+		enforce_unique_owner_args: false,
 		mint: [
 			'numLines'
 		],

@@ -4,7 +4,8 @@ exports.reglExample2 = {
 	series_name: 'regl-2-',
 	params: {
 		max_supply: '20',
-		enforce_unique_args: true,
+		enforce_unique_mint_args: true,
+		enforce_unique_owner_args: false,
 		mint: [
 			'speed'
 		],

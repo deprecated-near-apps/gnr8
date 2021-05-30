@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { loadSeries } from '../state/views';
 import { loadCodeFromSrc } from '../state/code';
-import {Frame} from './Frame';
+import {Page} from './Page';
 
 export const Series = ({ dispatch, views, account }) => {
 
@@ -11,10 +11,6 @@ export const Series = ({ dispatch, views, account }) => {
 		dispatch(loadSeries());
 	}, []);
 
-	return <>
-		<div className="gallery">
-			<Frame {...{ dispatch, items: series }} />
-		</div>
-	</>;
+	return <Page {...{ dispatch, items: series }} />;
 };
 

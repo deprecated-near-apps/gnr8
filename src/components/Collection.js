@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { loadEverythingForOwner } from '../state/views';
 import { loadCodeFromSrc } from '../state/code';
-import {Frame} from './Frame';
+import {Page} from './Page';
 
 export const Collection = ({ dispatch, views, account, near }) => {
 	if (!account) return null;
@@ -36,9 +36,7 @@ export const Collection = ({ dispatch, views, account, near }) => {
 			{ loading.cta }
 		</center>}
 
-		<div className="gallery">
-			<Frame {...{ dispatch, items }} />
-		</div>
+		<Page {...{ dispatch, items }} />
 	</>;
 };
 

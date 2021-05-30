@@ -104,7 +104,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	};
 
 	const handleCreateSeries = async () => {
-		const { params } = getParams(code);
+		let { params } = getParams(code);
 
 		const series_name = window.prompt('Name of Series?');
 		const sellNow = window.confirm('Sell series now?');
@@ -112,17 +112,20 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 		set(PENDING_SERIES_UPDATE + account.accountId, { series_name, src: code, attempts: 0 });
 
+		params =  {
+			max_supply: params.max_supply,
+			enforce_unique_mint_args: params.enforce_unique_mint_args || false,
+			enforce_unique_owner_args: params.enforce_unique_owner_args || false,
+			mint: Object.keys(params.mint),
+			owner: Object.keys(params.owner),
+			packages: params.packages,
+		}
+
 		if (sellNow) {
 			account.functionCall(contractId, 'series_create_and_approve', {
 				series_name,
 				bytes: code.length.toString(),
-				params: {
-					max_supply: params.max_supply,
-					enforce_unique_args: params.enforce_unique_args || false,
-					mint: Object.keys(params.mint),
-					owner: Object.keys(params.owner),
-					packages: params.packages,
-				},
+				params,
 				account_id: marketId,
 				msg: {
 					sale_conditions: [
@@ -134,13 +137,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			account.functionCall(contractId, 'series_create', {
 				series_name,
 				bytes: code.length.toString(),
-				params: {
-					max_supply: params.max_supply,
-					enforce_unique_args: params.enforce_unique_args || false,
-					mint: Object.keys(params.mint),
-					owner: Object.keys(params.owner),
-					packages: params.packages,
-				},
+				params,
 			}, GAS, parseNearAmount('1'));
 		}
 	}

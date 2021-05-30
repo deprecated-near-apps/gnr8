@@ -1,7 +1,6 @@
 use crate::*;
 
 pub type SeriesName = String;
-pub type OwnerArgs = HashMap<String, String>;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -25,7 +24,8 @@ pub struct SeriesArgs {
 #[serde(crate = "near_sdk::serde")]
 pub struct SeriesParams {
     pub max_supply: U64,
-    pub enforce_unique_args: bool,
+    pub enforce_unique_mint_args: bool,
+    pub enforce_unique_owner_args: bool,
     pub mint: Vec<String>,
     pub owner: Vec<String>,
     pub packages: Vec<String>,
@@ -217,7 +217,7 @@ impl Contract {
     /// token specific methods because they are part of this series
 
     #[payable]
-    pub fn update_token_owner_args(&mut self, token_id: TokenId, owner_args: OwnerArgs) {
+    pub fn update_token_owner_args(&mut self, token_id: TokenId, owner_args: Vec<String>) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
 
@@ -225,24 +225,25 @@ impl Contract {
             .token_data_by_id
             .get(&token_id)
             .unwrap_or_else(|| panic!("No token {}", token_id));
+
         let series = self
             .series_by_name
             .get(&token_data.series_args.series_name)
             .unwrap_or_else(|| panic!("No series {}", token_data.series_args.series_name));
 
-        for (name, value) in &owner_args {
-            if let Some(idx) = series.params.owner.iter().position(|v| v == name) {
-                token_data.series_args.owner[idx] = value.clone();
-                self.token_data_by_id.insert(&token_id, &token_data);
-            } else {
-                log!(
-                    "Skipping: {}. This is not a parameter of series: {}",
-                    name,
-                    token_data.series_args.series_name
-                );
-            }
+        assert_eq!(series.params.owner.len(), owner_args.len(), "Incorrect length of owner_args for series");
+        
+        if series.params.enforce_unique_owner_args {
+            let series_owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, owner_args.join("")));
+            assert!(
+                self.series_mint_arg_hashes.insert(&series_owner_arg_hash),
+                "Token in series has identical owner args"
+            );
         }
 
+        token_data.series_args.owner = owner_args;
+        self.token_data_by_id.insert(&token_id, &token_data);
+        
         let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
         refund_deposit(required_storage_in_bytes, None);
     }

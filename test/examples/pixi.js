@@ -3,7 +3,8 @@ exports.pixi = {
 	series_name: 'pixi-1-',
 	params: {
 		max_supply: '200',
-		enforce_unique_args: false,
+		enforce_unique_mint_args: false,
+		enforce_unique_owner_args: false,
 		mint: [
 			'seed'
 		],

@@ -3,12 +3,14 @@ import BN from 'bn.js';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { getToken } from '../state/views';
-import { Frame } from './Frame';
+import { Frame } from './Page';
 import { Params } from './Params';
 
 export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	const { token, storagePerSale } = views;
+
+	console.log(token)
 
 	const [state, setState] = useState({ args: {} });
 
@@ -39,15 +41,19 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 	};
 
 	const handleUpdate = async () => {
-		const { token_id } = token;
-		const { args: owner_args } = state;
+		const { token_id, src } = token;
+		const { args: newArgs } = state;
+		const { params: { owner } } = getParams(src);
+
+		const args = {}
+		Object.entries(owner).forEach(([name, value], i) => args[name] = newArgs[name] || series_args.owner[i] || value.default);
 
 		await account.functionCall({
 			contractId,
 			methodName: 'update_token_owner_args',
 			args: {
 				token_id,
-				owner_args,
+				owner_args: Object.values(args),
 			},
 			gas: GAS,
 			attachedDeposit: parseNearAmount('0.1')

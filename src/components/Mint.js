@@ -4,7 +4,7 @@ import { loadCodeFromSrc, getParams } from '../state/code';
 import { loadMint, getTokensForSeries } from '../state/views';
 import { Menu } from './Menu';
 import { Params } from './Params';
-import { Frame } from './Frame';
+import { Frame } from './Page';
 
 export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
@@ -77,7 +77,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			[item.series.series_name]: {
 				frag: <>
 					<div>A itemable series with a total supply of {item.series.params.max_supply}.</div>
-					{ item.series.params.enforce_unique_args &&
+					{ item.series.params.enforce_unique_mint_args &&
 					<div>
 						Each combination of minting parameters below
 						({item.series.params.mint.map((p) => p.name)})

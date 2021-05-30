@@ -24,6 +24,17 @@ impl Contract {
         }
         tmp
     }
+
+    pub fn get_sales_batch(
+        &self,
+        sales_names: Vec<ContractAndTokenId>
+    ) -> Vec<Option<Sale>> {
+        let mut tmp = vec![];
+        for sale_name in sales_names {
+            tmp.push(self.sales.get(&sale_name));
+        }
+        tmp
+    }
     
     pub fn get_supply_by_owner_id(
         &self,

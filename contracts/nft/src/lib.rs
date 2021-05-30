@@ -69,7 +69,8 @@ pub struct Contract {
 
     /// CUSTOM
     pub token_data_by_id: LookupMap<TokenId, TokenData>,
-    pub series_arg_hashes: LookupSet<CryptoHash>,
+    pub series_mint_arg_hashes: LookupSet<CryptoHash>,
+    pub series_owner_arg_hashes: LookupSet<CryptoHash>,
     pub series_by_name: UnorderedMap<SeriesName, Series>,
     pub series_per_owner: LookupMap<AccountId, UnorderedSet<SeriesName>>,
     pub tokens_per_series: LookupMap<SeriesName, UnorderedSet<TokenId>>,
@@ -89,7 +90,8 @@ pub enum StorageKey {
     NftMetadata,
     // CUSTOM
     TokenDataById,
-    SeriesArgHashes,
+    SeriesMintArgHashes,
+    SeriesOwnerArgHashes,
     SeriesByName,
     SeriesApprovedIds {
         series_name_hash: CryptoHash,
@@ -123,7 +125,8 @@ impl Contract {
 
             // CUSTOM
             token_data_by_id: LookupMap::new(StorageKey::TokenDataById),
-            series_arg_hashes: LookupSet::new(StorageKey::SeriesArgHashes),
+            series_mint_arg_hashes: LookupSet::new(StorageKey::SeriesMintArgHashes),
+            series_owner_arg_hashes: LookupSet::new(StorageKey::SeriesOwnerArgHashes),
             series_by_name: UnorderedMap::new(StorageKey::SeriesByName),
             series_per_owner: LookupMap::new(StorageKey::SeriesPerOwner),
             tokens_per_series: LookupMap::new(StorageKey::TokensPerSeries),

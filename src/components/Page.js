@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { loadCodeFromSrc } from '../state/code';
 import { formatNearAmount } from '../utils/near-utils';
 
@@ -25,6 +25,15 @@ const Item = (item) => {
 
 	if (is_token) {
 		args = item.series_args
+	}
+
+	if (is_series) {
+		if (!params) {
+			params = item.params
+		}
+		if (is_sale && !conditions) {
+			conditions = item.sale.conditions
+		}
 	}
 
 	return (
@@ -72,4 +81,34 @@ export const Frame = ({
 	menu = true,
 	handleOffer = () => {}
 }) => items.map((item) => <Item {...{key: item.id, ...item, dispatch, menu, handleOffer}} />);
+
+const NUM_PER_PAGE_DEFAULT = 4;
+
+export const Page = ({
+	dispatch,
+	items,
+	menu = true,
+	handleOffer = () => {},
+	numPerPage = NUM_PER_PAGE_DEFAULT,
+}) => {
+	const [page, setPage] = useState(0)
+
+	const prevVisibility = page > 0 ? 'visible' : 'hidden'
+	const nextVisibility = (page+1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden'
+	items = items.slice(page * numPerPage, (page+1) * numPerPage)
+
+	return <>
+		<div className="pagination">
+			<div style={{visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
+			<div style={{visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
+		</div>
+		<div className="gallery">
+			<Frame {...{ dispatch, items, handleOffer, menu }} />
+		</div>
+		<div className="pagination bottom">
+			<div style={{visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
+			<div style={{visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
+		</div>
+	</>;
+}
 

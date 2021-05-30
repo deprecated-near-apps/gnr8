@@ -4,7 +4,8 @@ exports.regl3 = {
 	series_name: 'regl-3-',
 	params: {
 		max_supply: '1000',
-		enforce_unique_args: true,
+		enforce_unique_mint_args: true,
+		enforce_unique_owner_args: false,
 		mint: [
 			'backgroundColor'
 		],

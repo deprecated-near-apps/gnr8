@@ -49,10 +49,10 @@ impl Contract {
         }
         let token_id = format!("{}{}{}", series_name, SERIES_VARIANT_DELIMETER, num_tokens);
 
-        if series.params.enforce_unique_args {
-            let series_arg_hash = hash_account_id(&format!("{}{}", series_name, mint.join("")));
+        if series.params.enforce_unique_mint_args {
+            let series_mint_arg_hash = hash_account_id(&format!("{}{}", series_name, mint.join("")));
             assert!(
-                self.series_arg_hashes.insert(&series_arg_hash),
+                self.series_mint_arg_hashes.insert(&series_mint_arg_hash),
                 "Token in series has identical args"
             );
         }

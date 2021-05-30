@@ -3,7 +3,8 @@ exports.p51 = {
 	series_name: 'three-1-',
 	params: {
 		max_supply: '200',
-		enforce_unique_args: true,
+		enforce_unique_mint_args: true,
+		enforce_unique_owner_args: true,
 		mint: [
 			'seed'
 		],
@@ -18,6 +19,8 @@ exports.p51 = {
 	{
 		packages: ['p5@1.3.1'],
 		max_supply: '200',
+		enforce_unique_mint_args: true,
+		enforce_unique_owner_args: true,
 		mint: {
 			seed: {
 				default: 0,
