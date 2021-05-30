@@ -30,11 +30,12 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             STORAGE_PER_SALE
         );
 
-        let nft_contract_id = env::predecessor_account_id();
         let SaleArgs {
             sale_conditions,
-            token_type,
+            token_type
         } = near_sdk::serde_json::from_str(&msg).expect("Not valid SaleArgs");
+
+        let nft_contract_id = env::predecessor_account_id();
 
         let mut conditions = HashMap::new();
 
@@ -115,13 +116,13 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
 }
 
 trait NonFungibleSeriesApprovalReceiver {
-    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: String);
+    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: SaleArgs);
 }
 
 #[near_bindgen]
 impl NonFungibleSeriesApprovalReceiver for Contract {
     #[payable]
-    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: String) {
+    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: SaleArgs) {
         // pay storage for 1 sale listing
         let storage_amount = self.storage_amount().0;
         self.storage_deposit(Some(owner_id.clone()), Some(storage_amount));
@@ -138,8 +139,7 @@ impl NonFungibleSeriesApprovalReceiver for Contract {
         );
 
         let nft_contract_id = env::predecessor_account_id();
-        let SeriesSaleArgs { sale_conditions } =
-            near_sdk::serde_json::from_str(&msg).expect("Not valid SeriesSaleArgs");
+        let sale_conditions = msg.sale_conditions;
 
         let mut conditions = HashMap::new();
         for Price { price, ft_token_id } in sale_conditions {

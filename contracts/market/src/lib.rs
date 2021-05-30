@@ -32,12 +32,6 @@ pub struct SaleArgs {
     pub token_type: TokenType,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct SeriesSaleArgs {
-    pub sale_conditions: Vec<Price>,
-}
-
 const NO_DEPOSIT: Balance = 0;
 const STORAGE_PER_SALE: u128 = 1000 * STORAGE_PRICE_PER_BYTE;
 static DELIMETER: &str = "||";

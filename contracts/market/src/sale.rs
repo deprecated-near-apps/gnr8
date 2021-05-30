@@ -42,6 +42,16 @@ pub struct PurchaseArgs {
     pub token_id: TokenId,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SeriesMintArgs {
+    pub series_name: String,
+    pub mint: Vec<String>,
+    pub owner: Vec<String>,
+    pub perpetual_royalties: Option<HashMap<AccountId, u32>>,
+    pub receiver_id: Option<ValidAccountId>,
+}
+
 #[near_bindgen]
 impl Contract {
     

@@ -114,8 +114,6 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 	if (owner) {
 		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }));
 	}
-
-	console.log(args)
 	
 	const argVals = Object.values(state.args);
 	const isChanged = argVals.length && JSON.stringify(token.series_args.owner) !== JSON.stringify(argVals);

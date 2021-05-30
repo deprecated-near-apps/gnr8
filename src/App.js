@@ -7,6 +7,7 @@ import { useHistory, pathAndArgs } from './utils/history';
 import { Menu } from './components/Menu';
 
 import { Market } from './components/Market';
+import { Gallery } from './components/Gallery';
 import { Collection } from './components/Collection';
 import { Series } from './components/Series';
 import { Mint } from './components/Mint';
@@ -74,6 +75,7 @@ const App = () => {
 						app, menuKey: 'menu', update, options: {
 							'Market ᐊ': () => history.push('/'),
 							'Series ᐊ': () => history.push('/series'),
+							'Gallery ᐊ': () => history.push('/gallery'),
 							'Collection ᐊ': () => history.push('/collection'),
 							'Create ᐊ': () => history.push('/create'),
 						}
@@ -86,6 +88,7 @@ const App = () => {
 		<section>
 			{ path === '/' && <Market {...{ dispatch, views, account }} /> }
 			{ path === '/series' && <Series {...{ dispatch, views, args }} /> }
+			{ path === '/gallery' && <Gallery {...{ dispatch, views, account }} /> }
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }
 			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }

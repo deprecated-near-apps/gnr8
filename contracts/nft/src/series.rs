@@ -66,7 +66,7 @@ impl Contract {
         params: SeriesParams,
         account_id: ValidAccountId,
         royalty: Option<HashMap<AccountId, u32>>,
-        msg: Option<String>,
+        msg: Option<SaleArgs>,
     ) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
@@ -161,7 +161,7 @@ impl Contract {
         &mut self,
         series_name: String,
         account_id: ValidAccountId,
-        msg: Option<String>,
+        msg: Option<SaleArgs>,
     ) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
@@ -323,5 +323,5 @@ fn series_to_json(series: Series) -> SeriesJson {
 
 #[ext_contract(ext_non_fungible_series_approval_receiver)]
 trait NonFungibleSeriesApprovalReceiver {
-    fn series_on_approve(&mut self, series_name: SeriesName, owner_id: AccountId, msg: String);
+    fn series_on_approve(&mut self, series_name: SeriesName, owner_id: AccountId, msg: SaleArgs);
 }

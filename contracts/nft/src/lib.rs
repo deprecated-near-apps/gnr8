@@ -6,7 +6,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, LookupSet, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::{Base64VecU8, ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::IntoStorageKey;
+use near_sdk::BorshStorageKey;
 use near_sdk::{
     env, ext_contract, log, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault,
     Promise, PromiseResult, StorageUsage,
@@ -33,9 +33,7 @@ mod enumerable;
 mod package;
 mod series;
 
-// deprecated???
-pub type TokenType = String;
-pub type TypeSupplyCaps = HashMap<TokenType, U64>;
+pub type TypeSupplyCaps = HashMap<String, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
 static SERIES_VARIANT_DELIMETER: &str = ":";
@@ -44,6 +42,19 @@ const GAS_FOR_NFT_APPROVE: Gas = 10_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
 const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;
 const NO_DEPOSIT: Balance = 0;
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Price {
+    pub ft_token_id: ValidAccountId,
+    pub price: Option<U128>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SaleArgs {
+    pub sale_conditions: Vec<Price>,
+    pub token_type: Option<String>,
+}
 
 near_sdk::setup_alloc!();
 
@@ -68,7 +79,7 @@ pub struct Contract {
 }
 
 /// Helper structure to for keys of the persistent collections.
-#[derive(BorshSerialize)]
+#[derive(BorshStorageKey, BorshSerialize)]
 pub enum StorageKey {
     TokensPerOwner,
     TokenPerOwnerInner {
@@ -96,12 +107,6 @@ pub enum StorageKey {
     TokenPerPackageInner {
         package_name_version_hash: CryptoHash,
     },
-}
-
-impl IntoStorageKey for StorageKey {
-    fn into_storage_key(self) -> Vec<u8> {
-        self.try_to_vec().unwrap()
-    }
 }
 
 #[near_bindgen]

@@ -1,5 +1,6 @@
 
 $margin: 1rem;
+$double: 2rem;
 
 ::-webkit-scrollbar {
     width: 0;
@@ -30,6 +31,22 @@ body {
 #root {
     width: 100%;
     height: 100%;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 $margin;
+    font-family: 'Overpass Mono', monospace;
+    font-size: 1rem;
+    line-height: 2rem;
+    text-decoration: underline;
+    margin-bottom: $margin;
+    &.bottom {
+        margin-top: $margin;
+        padding-bottom: $margin;
+    }
 }
 
 .menu {

@@ -124,11 +124,11 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 					packages: params.packages,
 				},
 				account_id: marketId,
-				msg: JSON.stringify({
+				msg: {
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount(price) }
 					]
-				})
+				}
 			}, GAS, parseNearAmount('1'));
 		} else {
 			account.functionCall(contractId, 'series_create', {
@@ -155,6 +155,10 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i));
 
 	const options = {
+		[preview ? '▷ Hide Preview' : '▷ Show Preview']: () => {
+			setPreview(!preview);
+			updateEditorAndPreview(editor);
+		},
 		[sideBy ? '▷ Bottom Preview' : '▷ Side Preview']: () => { setSideBy(!sideBy); },
 		[showPackages ? '▽ Hide Packages' : '▷ Show Packages']: {
 			fn: () => { setShowPackages(!showPackages); },
@@ -171,7 +175,6 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			].join(''));
 		},
 		'▷ Add Owner Parameter': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
-		'▷ Create Series': () => handleCreateSeries(),
 	};
 
 	return <>
@@ -179,10 +182,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		<div className="menu no-barcode">
 			<div className="bar">
 				<div onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</div>
-				<div onClick={() => {
-					setPreview(!preview);
-					updateEditorAndPreview(editor);
-				}}>Preview</div>
+				<div onClick={() => handleCreateSeries()}>Create</div>
 			</div>
 			{
 				createMenu === 'left' && <div className="sub below">

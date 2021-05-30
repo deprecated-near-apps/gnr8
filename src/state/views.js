@@ -115,6 +115,70 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	update('views', { market: sales });
 }
 
+
+
+export const loadGallery = () => async ({ getState, update, dispatch }) => {
+	const { contractAccount } = getState()
+	const numTokens = await contractAccount.viewFunction(contractId, 'nft_total_supply')
+	const tokens = await singleBatchCall({
+		contract: contractId,
+		method: 'nft_tokens',
+		args: {}, 
+		batch: {
+			from_index: '0',
+			limit: numTokens,
+			step: '50',
+			flatten: []
+		},
+		sort: {
+			path: 'created_at',
+		}
+	})
+
+	const series_names = [...new Set(tokens.map(({ token_id }) => id2series(token_id)))]
+
+	const series = await singleBatchCall({
+		contract: contractId,
+		method: 'series_batch',
+		args: {
+			series_names
+		},
+		batch: {
+			from_index: '0',
+			limit: series_names.length.toString(),
+			step: '50', // divides batch above
+			flatten: [],
+		},
+	}, 'POST')
+
+	const seriesClaimed = await singleBatchCall({
+		contract: contractId,
+		method: 'nft_supply_for_series_batch',
+		args: {
+			series_names
+		},
+		batch: {
+			from_index: '0',
+			limit: series_names.length.toString(),
+			step: '50', // divides batch above
+			flatten: [],
+		},
+	}, 'POST')
+
+	series.forEach((s, i) => s.claimed = seriesClaimed[i])
+
+	tokens.forEach((token) => {
+		token.is_token = true
+		const { token_id } = token
+		const series_name = token.series_name = id2series(token_id)
+		token.series = series.find((s) => s.series_name === series_name)
+		token.id = token_id
+		token.src = token.series.src
+	})
+
+	update('views', { gallery: tokens });
+}
+
 export const loadMint = (series_name) => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState()
 	const sale = await contractAccount.viewFunction(marketId, 'get_sale', {

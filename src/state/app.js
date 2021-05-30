@@ -24,6 +24,7 @@ const initialState = {
 		packages: [],
 
 		market: [],
+		gallery: [],
 		series: [],
 		mint: null,
 	}

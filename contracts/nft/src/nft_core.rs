@@ -137,7 +137,7 @@ impl NonFungibleTokenCore for Contract {
                 receiver_id.as_ref(),
                 &token_id,
                 approval_id,
-                memo,
+                None,
             );
             (
                 previous_token.owner_id,

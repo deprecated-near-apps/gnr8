@@ -206,11 +206,11 @@ describe('deploy contract ' + contractName, () => {
 			args: {
 				...exampleArgs[2],
 				account_id: marketId,
-				msg: JSON.stringify({
+				msg: {
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount('1')}
 					]
-				})
+				}
 			},
 			gas: GAS,
 			attachedDeposit:  parseNearAmount('1')
@@ -313,8 +313,6 @@ describe('deploy contract ' + contractName, () => {
 		}
 	});
 
-
-
 	test('owner creates NFT series', async () => {
 		await contractAccount.functionCall({
 			contractId,
@@ -359,11 +357,11 @@ describe('deploy contract ' + contractName, () => {
 			args: {
 				series_name: reglExample2.series_name,
 				account_id: marketId,
-				msg: JSON.stringify({
+				msg: {
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount('1')}
 					]
-				})
+				}
 			},
 			gas: GAS,
 			attachedDeposit: deposit
