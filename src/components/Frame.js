@@ -2,18 +2,20 @@ import React, { useEffect } from 'react';
 import { loadCodeFromSrc } from '../state/code';
 import { formatNearAmount } from '../utils/near-utils';
 
-const Item = ({
-	id, src,
-	owner_id, is_sale, is_series, is_token,
-	conditions,
-	series: { params, claimed = 0 } = {},
-	token: {
-		series_args: args,
-		num_transfers,
-	} = {},
-	// for all items
-	dispatch, menu, handleOffer
-}) => {
+const Item = (item) => {
+
+	let {
+		id, src,
+		owner_id, is_sale, is_series, is_token,
+		conditions,
+		series: { params, claimed = 0 } = {},
+		token: {
+			series_args: args,
+			num_transfers,
+		} = {},
+		// for all items
+		dispatch, menu, handleOffer
+	} = item
 
 	useEffect(() => {
 		dispatch(loadCodeFromSrc({

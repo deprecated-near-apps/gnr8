@@ -6,9 +6,10 @@ const HELPER_URL = 'https://helper.nearapi.org/v1/batch/'
 
 // TODO cache series and tokens already seen
 const seriesCache = {};
-const tokenCache = {};
+// const tokenCache = {};
 
 const id2series = (token_id) => token_id.split(SERIES_DELIMETER)[0]
+
 export const singleBatchCall = async (view, method = 'GET') => {
 	let url = HELPER_URL;
 	let body
@@ -50,51 +51,57 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	})
 
 	const token_ids = sales.filter(({ is_series }) => !is_series).map(({ token_id }) => token_id)
-	const series_names = sales.map(({ token_id }) => id2series(token_id))
+	const cachedSeriesNames = Object.keys(seriesCache)
+	const series_names = [...new Set(sales.map(({ token_id }) => id2series(token_id)))].filter((n) => !cachedSeriesNames.includes(n))
+	
+	const [tokens, series, seriesClaimed] = await Promise.all([
+		singleBatchCall({
+			contract: contractId,
+			method: 'nft_tokens_batch',
+			args: {
+				token_ids
+			},
+			batch: {
+				from_index: '0',
+				limit: numSales,
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_batch',
+			args: {
+				series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: numSales,
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
+		singleBatchCall({
+			contract: contractId,
+			method: 'nft_supply_for_series_batch',
+			args: {
+				series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: numSales,
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST')
+	])
 
-	const tokens = await singleBatchCall({
-		contract: contractId,
-		method: 'nft_tokens_batch',
-		args: {
-			token_ids
-		},
-		batch: {
-			from_index: '0',
-			limit: numSales,
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST');
-
-	const series = await singleBatchCall({
-		contract: contractId,
-		method: 'series_batch',
-		args: {
-			series_names
-		},
-		batch: {
-			from_index: '0',
-			limit: numSales,
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
-
-	const seriesClaimed = await singleBatchCall({
-		contract: contractId,
-		method: 'nft_supply_for_series_batch',
-		args: {
-			series_names
-		},
-		batch: {
-			from_index: '0',
-			limit: numSales,
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
-
-	series.forEach((s, i) => s.claimed = seriesClaimed[i])
+	series.forEach((s, i) => {
+		s.claimed = seriesClaimed[i]
+		seriesCache[s.series_name] = s
+	})
+	// add cached series we removed from series_names arg to batch calls
+	series.push(...Object.values(seriesCache))
 
 	sales.forEach((sale) => {
 		sale.is_sale = true
@@ -135,37 +142,44 @@ export const loadGallery = () => async ({ getState, update, dispatch }) => {
 		}
 	})
 
-	const series_names = [...new Set(tokens.map(({ token_id }) => id2series(token_id)))]
+	const cachedSeriesNames = Object.keys(seriesCache)
+	const series_names = [...new Set(tokens.map(({ token_id }) => id2series(token_id)))].filter((n) => !cachedSeriesNames.includes(n))
+	
+	const [series, seriesClaimed] = await Promise.all([
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_batch',
+			args: {
+				series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: series_names.length.toString(),
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
+		singleBatchCall({
+			contract: contractId,
+			method: 'nft_supply_for_series_batch',
+			args: {
+				series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: series_names.length.toString(),
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST')
+	])
 
-	const series = await singleBatchCall({
-		contract: contractId,
-		method: 'series_batch',
-		args: {
-			series_names
-		},
-		batch: {
-			from_index: '0',
-			limit: series_names.length.toString(),
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
-
-	const seriesClaimed = await singleBatchCall({
-		contract: contractId,
-		method: 'nft_supply_for_series_batch',
-		args: {
-			series_names
-		},
-		batch: {
-			from_index: '0',
-			limit: series_names.length.toString(),
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
-
-	series.forEach((s, i) => s.claimed = seriesClaimed[i])
+	series.forEach((s, i) => {
+		s.claimed = seriesClaimed[i]
+		seriesCache[s.series_name] = s
+	})
+	// add cached series we removed from series_names arg to batch calls
+	series.push(...Object.values(seriesCache))
 
 	tokens.forEach((token) => {
 		token.is_token = true
@@ -200,32 +214,35 @@ export const loadMint = (series_name) => async ({ getState, update, dispatch }) 
 export const loadSeries = () => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState()
 	const numSeries = await contractAccount.viewFunction(contractId, 'series_supply', {})
-	const series = await singleBatchCall({
-		contract: contractId,
-		method: 'series_range',
-		args: {},
-		batch: {
-			from_index: '0',
-			limit: numSeries,
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
-
-	const seriesClaimed = await singleBatchCall({
-		contract: contractId,
-		method: 'series_range',
-		args: {},
-		batch: {
-			from_index: '0',
-			limit: numSeries,
-			step: '50', // divides batch above
-			flatten: [],
-		},
-	}, 'POST')
+	
+	const [series, seriesClaimed] = await Promise.all([
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_range',
+			args: {},
+			batch: {
+				from_index: '0',
+				limit: numSeries,
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_range',
+			args: {},
+			batch: {
+				from_index: '0',
+				limit: numSeries,
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST')
+	])
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i]
+		seriesCache[s.series_name] = s
 		addCompatFields(s)
 	})
 
@@ -233,7 +250,13 @@ export const loadSeries = () => async ({ getState, update, dispatch }) => {
 }
 
 
+
+
 ///  TODO upgrade the rest of the views to use api-helper
+
+
+
+
 export const loadCollection = (owner_id) => async ({ getState, update, dispatch }) => {
 
 }
