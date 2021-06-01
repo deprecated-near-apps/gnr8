@@ -43,7 +43,7 @@ const speed = {{speed}}
 /// normal regl example
 
 // As usual, we start by creating a full screen regl object
-const regl = createREGL() 
+const regl = createREGL({ attributes: { preserveDrawingBuffer: true } }) 
 
 const pixels = regl.texture() 
 

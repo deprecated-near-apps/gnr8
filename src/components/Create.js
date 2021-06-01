@@ -48,7 +48,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const init = async () => {
 		await dispatch(getPackageRange());
-		onChange(three1.src, true);
+		onChange(reglExample.src, true);
 		checkSeriesUpdate();
 	}
 	useEffect(init, []);

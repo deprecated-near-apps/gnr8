@@ -40,7 +40,7 @@ const angleSpeed = {{angleSpeed}}
 /// normal regl example
 
 // As usual, we start by creating a full screen regl object
-const regl = createREGL()
+const regl = createREGL({ attributes: { preserveDrawingBuffer: true } })
 
 // Next we create our command
 const draw = regl({
