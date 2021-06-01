@@ -1,6 +1,6 @@
 
 exports.three2 = {
-	series_name: 'three-2-',
+	series_name: 'three-2',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: true,
@@ -152,7 +152,7 @@ exports.three2 = {
         raycaster = new THREE.Raycaster();
         raycaster.params.Line.threshold = 3;
 
-        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         container.appendChild( renderer.domElement );

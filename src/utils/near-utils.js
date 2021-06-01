@@ -60,14 +60,14 @@ export const getWallet = async () => {
 	return { near, wallet, contractAccount };
 };
 
-export const getSignature = async (account, key) => {
+export const getSignature = async (account) => {
 	const { accountId } = account;
 	const block = await account.connection.provider.block({ finality: 'final' });
 	const blockNumber = block.header.height.toString();
 	const signer = account.inMemorySigner || account.connection.signer;
 	const signed = await signer.signMessage(Buffer.from(blockNumber), accountId, networkId);
 	const blockNumberSignature = Buffer.from(signed.signature).toString('base64');
-	return { blockNumber, blockNumberSignature };
+	return { accountId, blockNumber, blockNumberSignature };
 };
 
 export const postSignedJson = async ({ account, contractName, url, data = {} }) => {

@@ -1,4 +1,4 @@
-import { marketId, contractId } from './near';
+import { marketId, contractId, networkId } from './near';
 
 const DELIMETER = '||';
 const SERIES_DELIMETER = ':';
@@ -21,7 +21,7 @@ export const singleBatchCall = async (view, method = 'GET') => {
 	}
 	return (await fetch(url, {
 		headers: {
-			'near-network': 'testnet'
+			'near-network': networkId,
 		},
 		method,
 		body,
@@ -96,6 +96,8 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 		}, 'POST')
 	])
 
+	console.log(series)
+
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i]
 		seriesCache[s.series_name] = s
@@ -136,7 +138,7 @@ export const loadGallery = () => async ({ getState, update, dispatch }) => {
 			flatten: []
 		},
 		sort: {
-			path: 'created_at',
+			path: 'metadata.issued_at',
 		}
 	})
 
@@ -171,6 +173,8 @@ export const loadGallery = () => async ({ getState, update, dispatch }) => {
 			},
 		}, 'POST')
 	])
+
+	console.log(series)
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i]

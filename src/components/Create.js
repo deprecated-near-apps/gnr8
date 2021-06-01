@@ -34,18 +34,21 @@ const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE';
 
 export const Create = ({ app, views, update, dispatch, account }) => {
 
+	const { createMenu, consoleLog } = app;
 	const { packages } = views;
 
+	const [console, setConsole] = useState(false);
 	const [preview, setPreview] = useState(false);
 	const [code, setCode] = useState();
 	const [editor, setEditor] = useState();
 	const [sideBy, setSideBy] = useState(true);
 	const [showPackages, setShowPackages] = useState(false);
+	const [showExamples, setShowExamples] = useState(false);
 	const [packageFilter, setPackageFilter] = useState('');
 
 	const init = async () => {
 		await dispatch(getPackageRange());
-		onChange(p51.src, true);
+		onChange(three1.src, true);
 		checkSeriesUpdate();
 	}
 	useEffect(init, []);
@@ -65,7 +68,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const updateEditorAndPreview = (editor, newValue) => {
 		if (!editor || !code) return;
 		dispatch(loadCodeFromSrc({
-			id: 'create-preview', src: code,
+			id: 'create-preview', src: newValue || code,
 		}));
 		setTimeout(() => {
 			editor.resize();
@@ -142,14 +145,17 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}
 	}
 
-	const { createMenu } = app;
-
 	const packageMenu = {
 		'- Add New Package': addPackage,
 		'- Filter': { frag: <input type="text" onChange={(e) => setPackageFilter(e.target.value)} /> },
 	};
 	packages.filter(({ name_version }) => name_version.indexOf(packageFilter) > -1)
 		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i));
+
+	const examplesMenu = {};
+	examples.forEach(({ series_name, src }) => 
+		examplesMenu['- ' + series_name] = () => onChange(src, true)
+	)
 
 	const options = {
 		[preview ? '▷ Hide Preview' : '▷ Show Preview']: () => {
@@ -162,6 +168,11 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			close: false
 		},
 		...(showPackages ? packageMenu : {}),
+		[showExamples ? '▽ Hide Examples' : '▷ Show Examples']: {
+			fn: () => { setShowExamples(!showExamples); },
+			close: false
+		},
+		...(showExamples ? examplesMenu : {}),
 		'▷ Max Supply': () => setCode(code.replace(/max_supply:.*,/g, `max_supply: '${window.prompt('What should the max supply be?')}',`)),
 		'▷ Add Mint Parameter': () => {
 			const index = code.indexOf('mint: {') + 'mint: {'.length;
@@ -218,6 +229,15 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 				<iframe {...{
 					id: 'create-preview',
 				}} />
+			</div>
+		</div>
+
+		<div className={['console', console ? 'active' : ''].join(' ')}>
+			<div onClick={() => setConsole(!console)}>{console ? '▽ Hide Console' : '▷ Show Console'}</div>
+			<div className="output">
+				{
+					consoleLog.map((entry, i) => <div key={i}><span>{i}: </span>{entry}</div>)
+				}
 			</div>
 		</div>
 

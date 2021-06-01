@@ -1,7 +1,7 @@
 const { packages } = require('./packages');
 
 exports.reglExample2 = {
-	series_name: 'regl-2-',
+	series_name: 'regl-2',
 	params: {
 		max_supply: '20',
 		enforce_unique_mint_args: true,

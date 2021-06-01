@@ -1,6 +1,6 @@
 
 exports.three3 = {
-	series_name: 'three-3-',
+	series_name: 'three-3',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: true,
@@ -167,8 +167,8 @@ exports.three3 = {
 				wireframe = new THREE.Mesh( geometry3, wireframeMaterial );
 				mesh.add( wireframe );
 				scene.add( mesh );
-
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				
+				renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );

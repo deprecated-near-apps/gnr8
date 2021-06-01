@@ -8,6 +8,8 @@ const initialState = {
 		tab: 1,
 		sort: 2,
 		filter: 1,
+		consoleLog: [],
+		image: null,
 	},
 	near: {
 		initialized: false,

@@ -4,7 +4,7 @@ use near_sdk::json_types::{ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     assert_one_yocto, env, ext_contract, near_bindgen, AccountId, Balance, CryptoHash, Gas,
-    IntoStorageKey, PanicOnDefault, Promise, PromiseOrValue,
+    BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue,
 };
 use std::cmp::min;
 use std::collections::HashMap;
@@ -56,7 +56,7 @@ pub struct Contract {
 }
 
 /// Helper structure to for keys of the persistent collections.
-#[derive(BorshSerialize)]
+#[derive(BorshStorageKey, BorshSerialize)]
 pub enum StorageKey {
     Sales,
     ByOwnerId,
@@ -67,12 +67,6 @@ pub enum StorageKey {
     ByNFTTokenTypeInner { token_type_hash: CryptoHash },
     FTTokenIds,
     StorageDeposits,
-}
-
-impl IntoStorageKey for StorageKey {
-    fn into_storage_key(self) -> Vec<u8> {
-        self.try_to_vec().unwrap()
-    }
 }
 
 #[near_bindgen]

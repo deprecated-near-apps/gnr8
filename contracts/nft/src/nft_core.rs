@@ -331,8 +331,12 @@ impl NonFungibleTokenCore for Contract {
                 approved_account_ids: token.approved_account_ids,
                 series_args: token_data.series_args,
                 royalty: token_data.royalty,
-                created_at: token_data.created_at,
                 num_transfers: token_data.num_transfers,
+                metadata: TokenMetadata{
+                    media: token_data.metadata.media,
+                    media_hash: token_data.metadata.media_hash,
+                    issued_at: token_data.metadata.issued_at
+                }
             }
         })
     }

@@ -1,6 +1,6 @@
 
 exports.three1 = {
-	series_name: 'three-1-',
+	series_name: 'three-1',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: true,
@@ -101,8 +101,7 @@ function init() {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add( mesh );
-
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true });
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.shadowMap.enabled = true;

@@ -115,8 +115,12 @@ impl Contract {
                     owner,
                 },
                 royalty,
-                created_at: env::block_timestamp().into(),
                 num_transfers: U64(0),
+                metadata: TokenMetadata{
+                    media: None,
+                    media_hash: None,
+                    issued_at: Some(env::block_timestamp().to_string())
+                },
             },
         );
         self.internal_add_token_to_owner(&token.owner_id, &token_id);
@@ -203,8 +207,12 @@ impl Contract {
                     owner,
                 },
                 royalty,
-                created_at: env::block_timestamp().into(),
                 num_transfers: U64(0),
+                metadata: TokenMetadata{
+                    media: None,
+                    media_hash: None,
+                    issued_at: Some(env::block_timestamp().to_string())
+                },
             },
         );
         self.internal_add_token_to_owner(&token.owner_id, &token_id);

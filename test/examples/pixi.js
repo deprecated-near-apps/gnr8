@@ -1,6 +1,6 @@
 
 exports.pixi = {
-	series_name: 'pixi-1-',
+	series_name: 'pixi-1',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: false,

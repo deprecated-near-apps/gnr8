@@ -62,7 +62,7 @@ describe('deploy contract ' + contractName, () => {
 
 	const exampleArgs = [reglExample, reglExample2, regl3];
 	const srcUpdateArgs = exampleArgs.map((example) => {
-		const series_name = example.series_name = example.series_name + t;
+		const series_name = example.series_name = example.series_name + '-' + t;
 		example.bytes = example.src.length.toString();
 		example.royalty = {
 			'si1.testnet': 1000
@@ -86,6 +86,7 @@ describe('deploy contract ' + contractName, () => {
 			owner,
 		}
 	};
+
 	const args2 = {
 		series_mint_args: {
 			series_name,

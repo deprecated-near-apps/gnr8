@@ -3,9 +3,28 @@ import { contractId } from './near';
 
 const paramLabels = ['mint', 'owner'];
 
-export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => async ({ getState }) => {
+export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
-	const { code, html, css, params } = getParams(src);
+	const log = (msg) => {
+		const { app: { consoleLog } } = getState();
+		update('app', {
+			consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
+		})
+		setTimeout(() => document.querySelector('.console .output').scrollTop = 999999, 150)
+	}
+	window.onmessage = ({ data }) => {
+		const { type, msg, byteLength } = data
+		if (byteLength) {
+			update('app', { image: data })
+		} else {
+			window.console[type](msg)
+			log(type + ': ' + msg)
+		}
+	}
+	const { code, html, css, params, error } = getParams(src);
+	if (error) {
+		return log(error.message)
+	}
 	if (args) {
 		paramLabels.forEach((label) => {
 			Object.entries(params[label]).forEach(([k], i) => {
@@ -15,7 +34,7 @@ export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => a
 			});
 		});
 	}
-	loadCode({id, contractAccount, owner_id, num_transfers, params, code, html, css });
+	loadCode({ id, contractAccount, owner_id, num_transfers, params, code, html, css });
 };
 
 export const getParams = (code) => {
@@ -27,7 +46,8 @@ export const getParams = (code) => {
 	try {
 		params = JSON5.parse(paramsMatch[0]);
 	} catch (e) {
-		return console.warn(e);
+		console.warn(e)
+		return { error: e };
 	}
 	if (!params.mint) params.mint = {};
 	if (!params.owner) params.owner = {};
@@ -45,7 +65,7 @@ export const getParams = (code) => {
 	if (cssMatch) {
 		css = cssMatch.join('\n');
 	}
-	
+
 	const jsMatch = code.match(/@js[^]+@js/g)?.[0]?.split('@js')?.filter((_, i) => i % 2 === 1);
 	if (jsMatch) {
 		code = jsMatch.join('\n');
@@ -60,6 +80,24 @@ const iframeTemplate = `
     <head>
 		@packages
 		<style>@css</style>
+        <script>
+			['log', 'warn', 'error'].forEach((type) => {
+				window.console[type] = (msg) => {
+					parent.postMessage({ msg, type }, 'http://localhost:1234/');
+				}
+			})
+			window.onmessage = ({data}) => {
+				if (data.type === 'image') {
+					document.querySelector('canvas').toBlob(async (blob) => {
+						const image = await blob.arrayBuffer()
+						parent.postMessage(image, 'http://localhost:1234/', [image]);
+					})
+				}
+			}
+			// console.log('hey')
+			// console.warn('hey')
+			// console.error('hey')
+		</script>
 	</head>
     <body>
 		@html

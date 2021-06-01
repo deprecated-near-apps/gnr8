@@ -33,12 +33,40 @@ body {
     height: 100%;
 }
 
+.console {
+    z-index: 10000;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: $margin;
+    line-height: 1rem;
+    vertical-align: center;
+    width: 100vw;
+    background: black;
+    padding-top: 2px;
+    font-size: 0.8rem;
+    border-top: 1px solid white;
+    span {
+        display: inline-block;
+        background: #444;
+        padding: 2px 2px 0 4px;
+        margin-right: 8px;
+    }
+    &.active {
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.4);
+        height: 25vh;
+    }
+    > .output {
+        height: 100%;
+        overflow-y: scroll;
+    }
+}
+
 .pagination {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 $margin;
-    font-family: 'Overpass Mono', monospace;
     font-size: 1rem;
     line-height: 2rem;
     text-decoration: underline;
@@ -138,7 +166,7 @@ section {
 .create {
     .editor {
         width: 100%;
-        height: calc(100vh - 6rem);
+        height: calc(100vh - 7rem);
         &.preview {
             height: calc(50vh - 3rem);
         }
@@ -235,7 +263,7 @@ section {
     .create.side-by {
         display: flex;
         .editor {
-            height: calc(100vh - 6rem);
+            height: calc(100vh - 7rem);
         }
         .iframe, .iframe iframe  {
             border-top: none;
