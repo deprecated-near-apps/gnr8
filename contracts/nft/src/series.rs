@@ -63,18 +63,6 @@ pub struct Series {
     pub params: SeriesParams,
 }
 
-#[derive(Serialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct SeriesJson {
-    pub series_name: String,
-    pub src: String,
-    pub royalty: HashMap<AccountId, u32>,
-    pub owner_id: AccountId,
-    pub approved_account_ids: Vec<AccountId>,
-    pub created_at: U64,
-    pub params: SeriesParams,
-}
-
 mod unordered_set_json {
     use super::*;
     use near_sdk::serde::{self, Serializer};
