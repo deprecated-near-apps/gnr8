@@ -262,21 +262,12 @@ impl Contract {
             env::predecessor_account_id(),
             "Must be series owner"
         );
-        assert!(
-            match series.src {
-                Src::Bytes(_) => true,
-                Src::Code(_) => false,
-            },
-            "Cannot set src twice"
-        );
-        assert_eq!(
-            match series.src {
-                Src::Bytes(s) => s.0,
-                Src::Code(_) => 0,
-            },
-            src.len() as u64,
-            "Must be exactly the same bytes"
-        );
+        if let Src::Bytes(l) = series.src {
+            assert_eq!(l.0, src.len() as u64, "Must be exactly the same bytes");
+        } else {
+            env::panic(b"Cannot set src twice")
+        }
+
         series.src = Src::Code(src);
         self.series_by_name.insert(&series_name, &series);
     }
@@ -369,11 +360,7 @@ impl Contract {
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         (start..end)
-            .map(|i| {
-                self.series_by_name
-                    .get(&keys.get(i).unwrap())
-                    .unwrap()
-            })
+            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap())
             .collect()
     }
 
