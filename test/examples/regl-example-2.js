@@ -33,11 +33,7 @@ exports.reglExample2 = {
 }
 @params
 
-const mouse = {x: 0, y: 0}
-window.onmousemove = (e) => {
-    mouse.x = e.clientX  
-    mouse.y = e.clientY 
-} 
+@js
 const speed = {{speed}}
 
 /// normal regl example
@@ -45,63 +41,82 @@ const speed = {{speed}}
 // As usual, we start by creating a full screen regl object
 const regl = createREGL({ attributes: { preserveDrawingBuffer: true } }) 
 
-const pixels = regl.texture() 
+const RADIUS = 512
+const INITIAL_CONDITIONS = (Array(RADIUS * RADIUS * 4)).fill(0).map(
+  () => Math.random() > 0.9 ? 255 : 0)
 
-const drawFeedback = regl({
+const state = (Array(2)).fill().map(() =>
+  regl.framebuffer({
+    color: regl.texture({
+      radius: RADIUS,
+      data: INITIAL_CONDITIONS,
+      wrap: 'repeat'
+    }),
+    depthStencil: false
+  }))
+
+const updateLife = regl({
   frag: \`
   precision mediump float;
-  uniform sampler2D texture;
-  uniform vec2 mouse;
-  uniform float t;
+  uniform sampler2D prevState;
   varying vec2 uv;
-  void main () {
-    float dist = length(gl_FragCoord.xy - mouse);
-    gl_FragColor = vec4(0.98 * texture2D(texture,
-      uv + cos(t) * vec2(0.5 - uv.y, uv.x - 0.5) - sin(2.0 * t) * (uv - 0.5)).rgb, 1) +
-      exp(-0.01 * dist) * vec4(
-        1.0 + cos(2.0 * t),
-        1.0 + cos(2.0 * t + 1.5),
-        1.0 + cos(2.0 * t + 3.0),
-        0.0);
-  }\`, 
+  void main() {
+    float n = 0.0;
+    for(int dx=-1; dx<=1; ++dx)
+    for(int dy=-1; dy<=1; ++dy) {
+      n += texture2D(prevState, uv+vec2(dx,dy)/float($\{RADIUS\})).r;
+    }
+    float s = texture2D(prevState, uv).r;
+    if(n > 3.0+s || n < 3.0) {
+      gl_FragColor = vec4(0,0,0,1);
+    } else {
+      gl_FragColor = vec4(1,1,1,1);
+    }
+  }\`,
+
+  framebuffer: ({tick}) => state[(tick + 1) % 2]
+})
+
+const setupQuad = regl({
+  frag: \`
+  precision mediump float;
+  uniform sampler2D prevState;
+  varying vec2 uv;
+  void main() {
+    float state = texture2D(prevState, uv).r;
+    gl_FragColor = vec4(vec3(state), 1);
+  }\`,
 
   vert: \`
   precision mediump float;
   attribute vec2 position;
   varying vec2 uv;
-  void main () {
-    uv = position;
-    gl_Position = vec4(2.0 * position - 1.0, 0, 1);
+  void main() {
+    uv = 0.5 * (position + 1.0);
+    gl_Position = vec4(position, 0, 1);
   }\`,
 
   attributes: {
-    position: [
-      -2, 0,
-      0, -2,
-      2, 2]
+    position: [ -4, -4, 4, -4, 0, 4 ]
   },
 
   uniforms: {
-    texture: pixels,
-    mouse: ({pixelRatio, viewportHeight}) => [
-       mouse.x * pixelRatio,
-       viewportHeight - mouse.y * pixelRatio
-    ],
-    t: ({tick}) => speed * tick
+    prevState: ({tick}) => state[tick % 2]
   },
+
+  depth: { enable: false },
 
   count: 3
 })
 
-regl.frame(function () {
-  regl.clear({
-    color: [0, 0, 0, 1]
+regl.frame(() => {
+  setupQuad(() => {
+    regl.draw()
+    updateLife()
   })
+})
 
-  drawFeedback()
+@js
 
-  pixels({
-    copy: true
-  })
-}) `,
+`,
 };

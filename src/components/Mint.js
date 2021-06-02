@@ -1,55 +1,96 @@
 import React, { useEffect, useState } from 'react';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
+import { get, set, del, ab2str, str2ab } from '../utils/storage';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { loadMint, getTokensForSeries } from '../state/views';
+import { getFrameMedia, uploadMedia, getMediaUrl } from '../state/app';
 import { Menu } from './Menu';
 import { Params } from './Params';
 import { Frame } from './Page';
 
+const PENDING_IMAGE_UPLOAD = '__PENDING_IMAGE_UPLOAD__';
+
 export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
-	const { mintMenu } = app;
+	const { mintMenu, image } = app;
 	const { mint: item } = views;
 
 	const [state, setState] = useState({ args: {} });
 
-	const seriesName = path.matchAll(/\/mint\/(.+)/gi).next()?.value[1]
+	const seriesName = path.matchAll(/\/mint\/(.+)/gi).next()?.value[1];
 
 	useEffect(() => {
 		dispatch(loadMint(seriesName));
+		checkPendingImageUpload();
 	}, []);
 
+	const checkPendingImageUpload = async () => {
+		const { accountId: account_id } = account;
+		const data = get(PENDING_IMAGE_UPLOAD + account.accountId);
+		if (data && data.image && data.image.length) {
+			/// find last token by owner
+			const numTokens = await account.viewFunction(contractId, 'nft_supply_for_owner', {
+				account_id,
+			});
+			const token = (await account.viewFunction(contractId, 'nft_tokens_for_owner', {
+				account_id,
+				from_index: (parseInt(numTokens, 10) - 1).toString(),
+				limit: '1',
+			}))[0];
+			// decode and upload image
+			const image = str2ab(data.image);
+			const response = await uploadMedia({account, image, token});
+			console.log(response);
+			del(PENDING_IMAGE_UPLOAD + account.accountId);
+		}
+	};
+
+	const handleImage = async () => {
+		if (!image) return;
+		// stash image in localStorage
+		set(PENDING_IMAGE_UPLOAD + account.accountId, { image: ab2str(image) });
+		//mint token
+		try {
+			const { series } = item;
+			const { args } = state;
+			if (series.claimed === series.params.max_supply) {
+				throw 'None left of this series';
+			}
+			const mint = Object.values(args);
+			const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default));
+			if (series.params.mint.length && !mint.length) {
+				throw 'Choose some values to make this unique';
+			}
+			const tokens = await dispatch(getTokensForSeries(series.series_name));
+			const exists = tokens.some(({ series_args }) => {
+				// console.log(JSON.stringify(series_args.mint.sort()), JSON.stringify(mint.sort()))
+				return series_args.mint.length && 
+				(JSON.stringify(series_args.mint.sort()) === JSON.stringify(mint.sort()));
+			});
+			if (exists) {
+				throw 'A token with these values exists, try another combination';
+			}
+			account.functionCall(marketId, 'offer', {
+				nft_contract_id: contractId,
+				token_id: series.series_name,
+				msg: JSON.stringify({
+					series_name: series.series_name,
+					mint,
+					owner,
+					receiver_id: account.accountId,
+					media: getMediaUrl(contractId)
+				})
+			}, GAS, parseNearAmount('1.1'));
+		} catch (e) {
+			console.warn(e);
+			del(PENDING_IMAGE_UPLOAD + account.accountId);
+			return alert(e);
+		}
+	};
+	useEffect(handleImage, [image]);
+
 	const handleOffer = async () => {
-		const { series } = item;
-		const { args } = state;
-		if (series.claimed === series.params.max_supply) {
-			return alert('None left of this series');
-		}
-		const mint = Object.values(args);
-		const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default));
-		
-		if (series.params.mint.length && !mint.length) {
-			return alert('Choose some values to make this unique');
-		}
-		const tokens = await dispatch(getTokensForSeries(series.series_name));
-		const exists = tokens.some(({ series_args }) => {
-			// console.log(JSON.stringify(series_args.mint.sort()), JSON.stringify(mint.sort()))
-			return series_args.mint.length && 
-			(JSON.stringify(series_args.mint.sort()) === JSON.stringify(mint.sort()));
-		});
-		if (exists) {
-			return alert('A token with these values exists, try another combination');
-		}
-		await account.functionCall(marketId, 'offer', {
-			nft_contract_id: contractId,
-			token_id: series.series_name,
-			msg: JSON.stringify({
-				series_name: series.series_name,
-				mint,
-				owner,
-				receiver_id: account.accountId,
-			})
-		}, GAS, parseNearAmount('1.1'));
+		dispatch(getFrameMedia(item.id)); // -> handleImage
 	};
 
 	const updateArgs = (name, value) => {
@@ -63,7 +104,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		}));
 	};
 
-	let mintMenuOptions = {}
+	let mintMenuOptions = {};
 	const params = [];
 	if (item) {
 		Object.entries(getParams(item.series.src).params.mint).forEach(([k, v]) => {
@@ -93,7 +134,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		return null;
 	}
 
-	const { args } = state
+	const { args } = state;
 
 	return <>
 		<div className="mint">

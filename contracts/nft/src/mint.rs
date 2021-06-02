@@ -2,11 +2,30 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+
     #[payable]
-    pub fn nft_mint(
+    pub fn lazy_mint(
         &mut self,
         series_mint_args: SeriesMintArgs,
-        is_lazy_mint: Option<bool>,
+    ) -> (TokenId, AccountId) {
+        let series_name = series_mint_args.series_name.clone();
+        let series = self
+            .series_by_name
+            .get(&series_name)
+            .unwrap_or_else(|| panic!("No series {}", series_name));
+
+        assert!(
+            series.approved_account_ids.contains(&env::predecessor_account_id()),
+            "predecessor_account_id (market?) not approved to lazy mint series"
+        );
+
+        self.internal_mint(series, series_mint_args)
+    }
+
+    fn internal_mint(
+        &mut self,
+        series: Series,
+        series_mint_args: SeriesMintArgs,
     ) -> (TokenId, AccountId) {
         let initial_storage_usage = env::storage_usage();
         let mut owner_id = env::predecessor_account_id();
@@ -17,20 +36,8 @@ impl Contract {
             owner,
             perpetual_royalties,
             receiver_id,
+            media,
         } = series_mint_args;
-
-        // CUSTOM - enforce series supply limit and store tokens per series / per package
-        let series = self
-            .series_by_name
-            .get(&series_name)
-            .unwrap_or_else(|| panic!("No series {}", series_name));
-
-        if is_lazy_mint.is_some() {
-            assert!(
-                series.approved_account_ids.contains(&owner_id),
-                "predecessor_account_id (market?) not approved to lazy mint series"
-            );
-        }
 
         let mut tokens_per_series = self.tokens_per_series.get(&series_name).unwrap_or_else(|| {
             UnorderedSet::new(StorageKey::TokenPerSeriesInner {
@@ -74,12 +81,9 @@ impl Contract {
         }
 
         // create royalty map
-        let mut royalty = HashMap::new();
+        let mut royalty = series.royalty;
         // user added perpetual_royalties (percentage paid with every transfer)
         if let Some(perpetual_royalties) = perpetual_royalties {
-            if is_lazy_mint.is_some() {
-                royalty = series.royalty;
-            }
             let mut total_perpetual = 0;
             for (account, amount) in perpetual_royalties {
                 royalty.insert(account, amount);
@@ -94,9 +98,7 @@ impl Contract {
                 "Perpetual royalties cannot be more than 20%"
             );
         }
-        // END CUSTOM
 
-        // insert token like normal
         let token = Token {
             owner_id: owner_id.clone(),
             approved_account_ids: Default::default(),
@@ -106,6 +108,10 @@ impl Contract {
             self.tokens_by_id.insert(&token_id, &token).is_none(),
             "Token already exists"
         );
+
+        // handle media
+        let media = media.map(|s| format!("{}{}.png", s, token_id));
+
         self.token_data_by_id.insert(
             &token_id,
             &TokenData {
@@ -117,7 +123,7 @@ impl Contract {
                 royalty,
                 num_transfers: U64(0),
                 metadata: TokenMetadata{
-                    media: None,
+                    media,
                     issued_at: Some(env::block_timestamp().to_string())
                 },
             },
@@ -125,10 +131,7 @@ impl Contract {
         self.internal_add_token_to_owner(&token.owner_id, &token_id);
 
         // refund unused deposit amount
-        let new_token_size_in_bytes = env::storage_usage() - initial_storage_usage;
-        let required_storage_in_bytes =
-            self.extra_storage_in_bytes_per_token + new_token_size_in_bytes;
-        refund_deposit(required_storage_in_bytes, Some(owner_id));
+        refund_deposit(initial_storage_usage, env::storage_usage() + self.extra_storage_in_bytes_per_token, None);
 
         (token_id, series.owner_id)
     }
@@ -143,6 +146,7 @@ impl Contract {
             owner,
             perpetual_royalties,
             receiver_id,
+            media,
         } = series_mint_args;
 
         // CUSTOM - enforce series supply limit and store tokens per series / per package
@@ -179,7 +183,7 @@ impl Contract {
         }
 
         // create royalty map
-        let mut royalty = HashMap::new();
+        let mut royalty = series.royalty;
         // user added perpetual_royalties (percentage paid with every transfer)
         if let Some(perpetual_royalties) = perpetual_royalties {
             for (account, amount) in perpetual_royalties {
@@ -197,6 +201,10 @@ impl Contract {
             self.tokens_by_id.insert(&token_id, &token).is_none(),
             "Token already exists"
         );
+
+        // handle media
+        let media = media.map(|s| format!("{}{}.png", s, token_id));
+
         self.token_data_by_id.insert(
             &token_id,
             &TokenData {
@@ -208,7 +216,7 @@ impl Contract {
                 royalty,
                 num_transfers: U64(0),
                 metadata: TokenMetadata{
-                    media: None,
+                    media,
                     issued_at: Some(env::block_timestamp().to_string())
                 },
             },
