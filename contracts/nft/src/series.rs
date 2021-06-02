@@ -32,25 +32,38 @@ pub struct SeriesParams {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub enum Src {
     Code(String),
     Bytes(U64),
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+impl Serialize for Src {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: near_sdk::serde::Serializer,
+    {
+        if let Src::Code(s) = self {
+            serializer.serialize_str(s)
+        } else {
+            serializer.serialize_str("")
+        }
+    }
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Series {
     pub series_name: String,
     pub src: Src,
     pub royalty: HashMap<AccountId, u32>,
     pub owner_id: AccountId,
+    #[serde(with = "unordered_set_json")]
     pub approved_account_ids: UnorderedSet<AccountId>,
     pub created_at: U64,
     pub params: SeriesParams,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct SeriesJson {
     pub series_name: String,
@@ -60,6 +73,19 @@ pub struct SeriesJson {
     pub approved_account_ids: Vec<AccountId>,
     pub created_at: U64,
     pub params: SeriesParams,
+}
+
+mod unordered_set_json {
+    use super::*;
+    use near_sdk::serde::{self, Serializer};
+
+    pub fn serialize<S, T>(set: &UnorderedSet<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize + BorshSerialize + BorshDeserialize,
+    {
+        serde::Serialize::serialize(&set.to_vec(), serializer)
+    }
 }
 
 #[near_bindgen]
@@ -83,7 +109,7 @@ impl Contract {
             .series_by_name
             .get(&series_name)
             .expect("Not valid series");
-            
+
         assert_eq!(
             series.owner_id,
             env::predecessor_account_id(),
@@ -203,11 +229,7 @@ impl Contract {
         }
     }
 
-    pub fn series_remove_approval(
-        &mut self,
-        series_name: String,
-        account_id: ValidAccountId,
-    ) {
+    pub fn series_remove_approval(&mut self, series_name: String, account_id: ValidAccountId) {
         let predecessor_account_id = env::predecessor_account_id();
         let initial_storage_usage = env::storage_usage();
 
@@ -217,14 +239,14 @@ impl Contract {
             .expect("Not valid series");
 
         assert_eq!(
-            series.owner_id,
-            predecessor_account_id,
+            series.owner_id, predecessor_account_id,
             "Must be series owner"
         );
 
         series.approved_account_ids.remove(account_id.as_ref());
 
-        let refund = env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
+        let refund =
+            env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
         if refund > 1 {
             Promise::new(predecessor_account_id).transfer(refund);
         }
@@ -243,14 +265,14 @@ impl Contract {
         assert!(
             match series.src {
                 Src::Bytes(_) => true,
-                Src::Code(_) => false
+                Src::Code(_) => false,
             },
             "Cannot set src twice"
         );
         assert_eq!(
             match series.src {
                 Src::Bytes(s) => s.0,
-                Src::Code(_) => 0
+                Src::Code(_) => 0,
             },
             src.len() as u64,
             "Must be exactly the same bytes"
@@ -272,7 +294,10 @@ impl Contract {
             .get(&token_id)
             .unwrap_or_else(|| panic!("No token {}", token_id));
 
-        assert_eq!(token.owner_id, predecessor_account_id, "Must be token owner");
+        assert_eq!(
+            token.owner_id, predecessor_account_id,
+            "Must be token owner"
+        );
 
         let mut token_data = self
             .token_data_by_id
@@ -284,12 +309,25 @@ impl Contract {
             .get(&token_data.series_args.series_name)
             .unwrap_or_else(|| panic!("No series {}", token_data.series_args.series_name));
 
-        assert_eq!(series.params.owner.len(), owner_args.len(), "Incorrect length of owner_args for series");
-        
+        assert_eq!(
+            series.params.owner.len(),
+            owner_args.len(),
+            "Incorrect length of owner_args for series"
+        );
+
         if series.params.enforce_unique_owner_args {
-            let previous_owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, token_data.series_args.owner.join(ARGS_DELIMETER)));
-            self.series_owner_arg_hashes.remove(&previous_owner_arg_hash);
-            let owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, owner_args.join(ARGS_DELIMETER)));
+            let previous_owner_arg_hash = hash_account_id(&format!(
+                "{}{}",
+                series.series_name,
+                token_data.series_args.owner.join(ARGS_DELIMETER)
+            ));
+            self.series_owner_arg_hashes
+                .remove(&previous_owner_arg_hash);
+            let owner_arg_hash = hash_account_id(&format!(
+                "{}{}",
+                series.series_name,
+                owner_args.join(ARGS_DELIMETER)
+            ));
             assert!(
                 self.series_owner_arg_hashes.insert(&owner_arg_hash),
                 "Token in series has identical owner args"
@@ -301,9 +339,11 @@ impl Contract {
 
         // TODO clean up
 
-        let required_storage_in_bytes: i64 = env::storage_usage() as i64 - initial_storage_usage as i64;
+        let required_storage_in_bytes: i64 =
+            env::storage_usage() as i64 - initial_storage_usage as i64;
         if required_storage_in_bytes < 0 {
-            let refund = env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
+            let refund =
+                env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
             if refund > 1 {
                 Promise::new(predecessor_account_id).transfer(refund);
             }
@@ -318,25 +358,29 @@ impl Contract {
         U64(self.series_by_name.keys_as_vector().len())
     }
 
-    pub fn series_data(&self, series_name: SeriesName) -> SeriesJson {
-            self.series_by_name
-                .get(&series_name)
-                .unwrap_or_else(|| panic!("No series {}", series_name)).into()
+    pub fn series_data(&self, series_name: SeriesName) -> Series {
+        self.series_by_name
+            .get(&series_name)
+            .unwrap_or_else(|| panic!("No series {}", series_name))
     }
 
-    pub fn series_range(&self, from_index: U64, limit: U64) -> Vec<SeriesJson> {
+    pub fn series_range(&self, from_index: U64, limit: U64) -> Vec<Series> {
         let keys = self.series_by_name.keys_as_vector();
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         (start..end)
-            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap().into())
+            .map(|i| {
+                self.series_by_name
+                    .get(&keys.get(i).unwrap())
+                    .unwrap()
+            })
             .collect()
     }
 
-    pub fn series_batch(&self, series_names: Vec<String>) -> Vec<SeriesJson> {
+    pub fn series_batch(&self, series_names: Vec<String>) -> Vec<Series> {
         series_names
             .into_iter()
-            .map(|series_name| self.series_by_name.get(&series_name).unwrap().into())
+            .map(|series_name| self.series_by_name.get(&series_name).unwrap())
             .collect()
     }
 
@@ -345,7 +389,7 @@ impl Contract {
         account_id: AccountId,
         from_index: U64,
         limit: U64,
-    ) -> Vec<SeriesJson> {
+    ) -> Vec<Series> {
         let series_per_owner = self.series_per_owner.get(&account_id);
         let series = if let Some(series_per_owner) = series_per_owner {
             series_per_owner
@@ -356,34 +400,8 @@ impl Contract {
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         (start..end)
-            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap().into())
+            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap())
             .collect()
-    }
-}
-
-impl From<Series> for SeriesJson {
-    fn from(series: Series) -> Self {
-        let Series {
-            series_name,
-            src,
-            royalty,
-            owner_id,
-            approved_account_ids,
-            created_at,
-            params,
-        } = series;
-        SeriesJson {
-            series_name,
-            src: match src {
-                Src::Bytes(_) => "".to_string(),
-                Src::Code(s) => s
-            },
-            royalty,
-            owner_id,
-            approved_account_ids: approved_account_ids.to_vec(),
-            created_at,
-            params,
-        }
     }
 }
 
