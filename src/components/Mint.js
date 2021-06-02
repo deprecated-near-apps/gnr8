@@ -43,7 +43,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		await account.functionCall(marketId, 'offer', {
 			nft_contract_id: contractId,
 			token_id: series.series_name,
-			memo: JSON.stringify({
+			msg: JSON.stringify({
 				series_name: series.series_name,
 				mint,
 				owner,

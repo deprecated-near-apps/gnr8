@@ -9,7 +9,7 @@ trait ExtContract {
         receiver_id: AccountId,
         token_id: TokenId,
         approval_id: U64,
-        memo: Option<String>,
+        msg: Option<String>,
         balance: U128,
     );
     fn ft_transfer(

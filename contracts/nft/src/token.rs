@@ -38,7 +38,16 @@ pub struct JsonToken {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TokenMetadata {
-    pub media: Option<String>, // URL to associated media, preferably to decentralized, content-addressed storage
-    pub media_hash: Option<Base64VecU8>, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
-    pub issued_at: Option<String>, // ISO 8601 datetime when token was issued or minted
+    pub media: Option<String>,
+    pub issued_at: Option<String>,
+}
+
+impl Contract {
+    pub fn update_metadata_media(&mut self, token_id: TokenId, media: String) {
+        let token = self.tokens_by_id.get(&token_id).expect("No token");
+        assert_eq!(token.owner_id, env::predecessor_account_id(), "Must be token owner");
+        let mut token_data = self.token_data_by_id.get(&token_id).expect("No token");
+        token_data.metadata.media = Some(media);
+        self.token_data_by_id.insert(&token_id, &token_data);
+    }
 }

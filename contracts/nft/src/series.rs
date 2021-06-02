@@ -32,10 +32,17 @@ pub struct SeriesParams {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum Src {
+    Code(String),
+    Bytes(U64),
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Series {
     pub series_name: String,
-    pub src: String,
-    pub bytes: U64,
+    pub src: Src,
     pub royalty: HashMap<AccountId, u32>,
     pub owner_id: AccountId,
     pub approved_account_ids: UnorderedSet<AccountId>,
@@ -48,7 +55,6 @@ pub struct Series {
 pub struct SeriesJson {
     pub series_name: String,
     pub src: String,
-    pub bytes: U64,
     pub royalty: HashMap<AccountId, u32>,
     pub owner_id: AccountId,
     pub approved_account_ids: Vec<AccountId>,
@@ -66,7 +72,7 @@ impl Contract {
         params: SeriesParams,
         account_id: ValidAccountId,
         royalty: Option<HashMap<AccountId, u32>>,
-        msg: Option<SaleArgs>,
+        msg: Option<String>,
     ) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
@@ -77,6 +83,7 @@ impl Contract {
             .series_by_name
             .get(&series_name)
             .expect("Not valid series");
+            
         assert_eq!(
             series.owner_id,
             env::predecessor_account_id(),
@@ -94,7 +101,8 @@ impl Contract {
                 msg,
                 account_id.as_ref(),
                 env::attached_deposit()
-                    .saturating_sub(env::storage_byte_cost() * Balance::from(storage_used)),
+                    .checked_sub(env::storage_byte_cost() * Balance::from(storage_used))
+                    .expect("Must pay enough to cover storage"),
                 env::prepaid_gas() - GAS_FOR_SERIES_APPROVE,
             );
         }
@@ -125,15 +133,15 @@ impl Contract {
         royalty: Option<HashMap<AccountId, u32>>,
     ) {
         let owner_id = env::predecessor_account_id();
+        let name = series_name.to_lowercase();
 
         assert!(
             self.series_by_name
                 .insert(
-                    &series_name,
+                    &name,
                     &Series {
-                        series_name: series_name.clone(),
-                        src: "".to_string(),
-                        bytes,
+                        series_name: name.clone(),
+                        src: Src::Bytes(bytes),
                         royalty: royalty.unwrap_or_default(),
                         owner_id: owner_id.clone(),
                         created_at: env::block_timestamp().into(),
@@ -161,7 +169,7 @@ impl Contract {
         &mut self,
         series_name: String,
         account_id: ValidAccountId,
-        msg: Option<SaleArgs>,
+        msg: Option<String>,
     ) {
         assert_at_least_one_yocto();
         let initial_storage_usage = env::storage_usage();
@@ -187,10 +195,38 @@ impl Contract {
                 msg,
                 account_id.as_ref(),
                 env::attached_deposit()
-                    .saturating_sub(env::storage_byte_cost() * Balance::from(storage_used)),
+                    .checked_sub(env::storage_byte_cost() * Balance::from(storage_used))
+                    .expect("Must pay enough to cover storage"),
                 env::prepaid_gas() - GAS_FOR_SERIES_APPROVE,
             )
             .as_return(); // Returning this promise
+        }
+    }
+
+    pub fn series_remove_approval(
+        &mut self,
+        series_name: String,
+        account_id: ValidAccountId,
+    ) {
+        let predecessor_account_id = env::predecessor_account_id();
+        let initial_storage_usage = env::storage_usage();
+
+        let mut series = self
+            .series_by_name
+            .get(&series_name)
+            .expect("Not valid series");
+
+        assert_eq!(
+            series.owner_id,
+            predecessor_account_id,
+            "Must be series owner"
+        );
+
+        series.approved_account_ids.remove(account_id.as_ref());
+
+        let refund = env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
+        if refund > 1 {
+            Promise::new(predecessor_account_id).transfer(refund);
         }
     }
 
@@ -204,13 +240,22 @@ impl Contract {
             env::predecessor_account_id(),
             "Must be series owner"
         );
-        assert!(series.src.is_empty(), "Cannot set src twice");
+        assert!(
+            match series.src {
+                Src::Bytes(_) => true,
+                Src::Code(_) => false
+            },
+            "Cannot set src twice"
+        );
         assert_eq!(
-            series.bytes.0,
+            match series.src {
+                Src::Bytes(s) => s.0,
+                Src::Code(_) => 0
+            },
             src.len() as u64,
             "Must be exactly the same bytes"
         );
-        series.src = src;
+        series.src = Src::Code(src);
         self.series_by_name.insert(&series_name, &series);
     }
 
@@ -219,12 +264,20 @@ impl Contract {
     #[payable]
     pub fn update_token_owner_args(&mut self, token_id: TokenId, owner_args: Vec<String>) {
         assert_at_least_one_yocto();
+        let predecessor_account_id = env::predecessor_account_id();
         let initial_storage_usage = env::storage_usage();
+
+        let token = self
+            .tokens_by_id
+            .get(&token_id)
+            .unwrap_or_else(|| panic!("No token {}", token_id));
+
+        assert_eq!(token.owner_id, predecessor_account_id, "Must be token owner");
 
         let mut token_data = self
             .token_data_by_id
             .get(&token_id)
-            .unwrap_or_else(|| panic!("No token {}", token_id));
+            .unwrap_or_else(|| panic!("No token_data {}", token_id));
 
         let series = self
             .series_by_name
@@ -234,18 +287,29 @@ impl Contract {
         assert_eq!(series.params.owner.len(), owner_args.len(), "Incorrect length of owner_args for series");
         
         if series.params.enforce_unique_owner_args {
-            let series_owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, owner_args.join("")));
+            let previous_owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, token_data.series_args.owner.join(ARGS_DELIMETER)));
+            self.series_owner_arg_hashes.remove(&previous_owner_arg_hash);
+            let owner_arg_hash = hash_account_id(&format!("{}{}", series.series_name, owner_args.join(ARGS_DELIMETER)));
             assert!(
-                self.series_mint_arg_hashes.insert(&series_owner_arg_hash),
+                self.series_owner_arg_hashes.insert(&owner_arg_hash),
                 "Token in series has identical owner args"
             );
         }
 
         token_data.series_args.owner = owner_args;
         self.token_data_by_id.insert(&token_id, &token_data);
-        
-        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
-        refund_deposit(required_storage_in_bytes, None);
+
+        // TODO clean up
+
+        let required_storage_in_bytes: i64 = env::storage_usage() as i64 - initial_storage_usage as i64;
+        if required_storage_in_bytes < 0 {
+            let refund = env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
+            if refund > 1 {
+                Promise::new(predecessor_account_id).transfer(refund);
+            }
+        } else {
+            refund_deposit(required_storage_in_bytes as u64, None);
+        }
     }
 
     /// views
@@ -255,11 +319,9 @@ impl Contract {
     }
 
     pub fn series_data(&self, series_name: SeriesName) -> SeriesJson {
-        series_to_json(
             self.series_by_name
                 .get(&series_name)
-                .unwrap_or_else(|| panic!("No series {}", series_name)),
-        )
+                .unwrap_or_else(|| panic!("No series {}", series_name)).into()
     }
 
     pub fn series_range(&self, from_index: U64, limit: U64) -> Vec<SeriesJson> {
@@ -267,14 +329,14 @@ impl Contract {
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         (start..end)
-            .map(|i| series_to_json(self.series_by_name.get(&keys.get(i).unwrap()).unwrap()))
+            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap().into())
             .collect()
     }
 
     pub fn series_batch(&self, series_names: Vec<String>) -> Vec<SeriesJson> {
         series_names
             .into_iter()
-            .map(|series_name| series_to_json(self.series_by_name.get(&series_name).unwrap()))
+            .map(|series_name| self.series_by_name.get(&series_name).unwrap().into())
             .collect()
     }
 
@@ -294,35 +356,38 @@ impl Contract {
         let start = u64::from(from_index);
         let end = min(start + u64::from(limit), keys.len());
         (start..end)
-            .map(|i| series_to_json(self.series_by_name.get(&keys.get(i).unwrap()).unwrap()))
+            .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap().into())
             .collect()
     }
 }
 
-fn series_to_json(series: Series) -> SeriesJson {
-    let Series {
-        series_name,
-        src,
-        bytes,
-        royalty,
-        owner_id,
-        approved_account_ids,
-        created_at,
-        params,
-    } = series;
-    SeriesJson {
-        series_name,
-        src,
-        bytes,
-        royalty,
-        owner_id,
-        approved_account_ids: approved_account_ids.to_vec(),
-        created_at,
-        params,
+impl From<Series> for SeriesJson {
+    fn from(series: Series) -> Self {
+        let Series {
+            series_name,
+            src,
+            royalty,
+            owner_id,
+            approved_account_ids,
+            created_at,
+            params,
+        } = series;
+        SeriesJson {
+            series_name,
+            src: match src {
+                Src::Bytes(_) => "".to_string(),
+                Src::Code(s) => s
+            },
+            royalty,
+            owner_id,
+            approved_account_ids: approved_account_ids.to_vec(),
+            created_at,
+            params,
+        }
     }
 }
 
 #[ext_contract(ext_non_fungible_series_approval_receiver)]
 trait NonFungibleSeriesApprovalReceiver {
-    fn series_on_approve(&mut self, series_name: SeriesName, owner_id: AccountId, msg: SaleArgs);
+    fn series_on_approve(&mut self, series_name: SeriesName, owner_id: AccountId, msg: String);
 }

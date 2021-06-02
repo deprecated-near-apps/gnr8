@@ -48,7 +48,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const init = async () => {
 		await dispatch(getPackageRange());
-		onChange(reglExample.src, true);
+		onChange(p51.src, true);
 		checkSeriesUpdate();
 	}
 	useEffect(init, []);
@@ -109,7 +109,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const handleCreateSeries = async () => {
 		let { params } = getParams(code);
 
-		const series_name = window.prompt('Name of Series?');
+		const series_name = window.prompt('Name of Series?').toLowerCase();
 		const sellNow = window.confirm('Sell series now?');
 		const price = window.prompt('What price in NEAR?');
 
@@ -130,11 +130,11 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 				bytes: code.length.toString(),
 				params,
 				account_id: marketId,
-				msg: {
+				msg: JSON.stringify({
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount(price) }
 					]
-				}
+				})
 			}, GAS, parseNearAmount('1'));
 		} else {
 			account.functionCall(contractId, 'series_create', {

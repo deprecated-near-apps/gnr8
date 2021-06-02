@@ -24,7 +24,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
         msg: String,
     ) {
 
-        // enforce cross contract calls only from NFT contracts
+        // enforce cross contract calls and owner_id is signer
 
         let nft_contract_id = env::predecessor_account_id();
         let signer_id = env::signer_account_id();
@@ -32,6 +32,11 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             nft_contract_id,
             signer_id,
             "nft_on_approve should only be called via cross-contract call"
+        );
+        assert_eq!(
+            owner_id.as_ref(),
+            &signer_id,
+            "owner_id should be signer_id"
         );
 
         // enforce signer's storage is enough to cover + 1 more sale 
@@ -131,30 +136,55 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
 }
 
 trait NonFungibleSeriesApprovalReceiver {
-    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: SaleArgs);
+    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: String);
 }
 
 #[near_bindgen]
 impl NonFungibleSeriesApprovalReceiver for Contract {
     #[payable]
-    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: SaleArgs) {
-        // pay storage for 1 sale listing
+    fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: String) {
+
+        // enforce cross contract calls and owner_id is signer
+
+        let nft_contract_id = env::predecessor_account_id();
+        let signer_id = env::signer_account_id();
+        assert_ne!(
+            nft_contract_id,
+            signer_id,
+            "nft_on_approve should only be called via cross-contract call"
+        );
+        assert_eq!(
+            owner_id.as_ref(),
+            &signer_id,
+            "owner_id should be signer_id"
+        );
+
+        // pay storage for 1 sale listing with attached deposit
         let storage_amount = self.storage_amount().0;
         self.storage_deposit(Some(owner_id.clone()), Some(storage_amount));
-        // refund excess
-        Promise::new(owner_id.clone().into())
-            .transfer(env::attached_deposit().saturating_sub(storage_amount));
+        // refund excess attached deposit
+        let refund = env::attached_deposit().saturating_sub(storage_amount);
+        if refund > 1 {
+            Promise::new(owner_id.clone().into()).transfer(refund);
+        }
+            
+        // enforce signer's storage is enough to cover + 1 more sale 
 
-        // double check owner has enough storage for market listing
-        let owner_paid_storage = self.storage_deposits.get(owner_id.as_ref()).unwrap_or(0);
+        let storage_amount = self.storage_amount().0;
+        let owner_paid_storage = self.storage_deposits.get(&signer_id).unwrap_or(0);
+        let signer_storage_required = (self.get_supply_by_owner_id(signer_id).0 + 1) as u128 * storage_amount;
         assert!(
-            owner_paid_storage >= STORAGE_PER_SALE,
-            "Required minimum storage to sell on market: {}",
-            STORAGE_PER_SALE
+            owner_paid_storage >= signer_storage_required,
+            "Insufficient storage paid: {}, for {} sales at {} rate of per sale",
+            owner_paid_storage, signer_storage_required / STORAGE_PER_SALE, STORAGE_PER_SALE
         );
 
         let nft_contract_id = env::predecessor_account_id();
-        let sale_conditions = msg.sale_conditions;
+
+        let SaleArgs {
+            sale_conditions,
+            token_type: _,
+        } = near_sdk::serde_json::from_str(&msg).expect("Not valid SaleArgs");
 
         let mut conditions = HashMap::new();
         for Price { price, ft_token_id } in sale_conditions {

@@ -15,6 +15,7 @@ pub trait NonFungibleTokenCore {
         token_id: TokenId,
         approval_id: Option<U64>,
         memo: Option<String>,
+        msg: Option<String>,
         balance: Option<U128>,
         max_len_payout: Option<u32>,
     ) -> Option<Payout>;
@@ -119,6 +120,7 @@ impl NonFungibleTokenCore for Contract {
         token_id: TokenId,
         approval_id: Option<U64>,
         memo: Option<String>,
+        msg: Option<String>,
         balance: Option<U128>,
         max_len_payout: Option<u32>,
     ) -> Option<Payout> {
@@ -126,9 +128,9 @@ impl NonFungibleTokenCore for Contract {
         let sender_id = env::predecessor_account_id();
 
         // should mint token from series for specified receiver_id
-        let (owner_id, token_id, approved_account_ids) = if let Some(memo) = memo {
+        let (owner_id, token_id, approved_account_ids) = if let Some(msg) = msg {
             let series_mint_args: SeriesMintArgs =
-                near_sdk::serde_json::from_str(&memo).expect("Invalid SeriesMintArgs");
+                near_sdk::serde_json::from_str(&msg).expect("Invalid SeriesMintArgs");
             let (new_token_id, series_owner_id) = self.nft_mint(series_mint_args, Some(true));
             (series_owner_id, new_token_id, HashMap::default())
         } else {
@@ -199,6 +201,10 @@ impl NonFungibleTokenCore for Contract {
 
         token_data.num_transfers = U64(token_data.num_transfers.0 + 1);
         self.token_data_by_id.insert(&token_id, &token_data);
+
+        if let Some(memo) = memo {
+            log!("Memo: {}", memo);
+        }
 
         // refund any NEAR if storage reqs changed
         refund_approved_account_ids(owner_id, &approved_account_ids);
@@ -334,7 +340,6 @@ impl NonFungibleTokenCore for Contract {
                 num_transfers: token_data.num_transfers,
                 metadata: TokenMetadata{
                     media: token_data.metadata.media,
-                    media_hash: token_data.metadata.media_hash,
                     issued_at: token_data.metadata.issued_at
                 }
             }

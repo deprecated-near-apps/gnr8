@@ -50,7 +50,7 @@ impl Contract {
         let token_id = format!("{}{}{}", series_name, SERIES_VARIANT_DELIMETER, num_tokens);
 
         if series.params.enforce_unique_mint_args {
-            let series_mint_arg_hash = hash_account_id(&format!("{}{}", series_name, mint.join("")));
+            let series_mint_arg_hash = hash_account_id(&format!("{}{}", series_name, mint.join(ARGS_DELIMETER)));
             assert!(
                 self.series_mint_arg_hashes.insert(&series_mint_arg_hash),
                 "Token in series has identical args"
@@ -118,7 +118,6 @@ impl Contract {
                 num_transfers: U64(0),
                 metadata: TokenMetadata{
                     media: None,
-                    media_hash: None,
                     issued_at: Some(env::block_timestamp().to_string())
                 },
             },
@@ -210,7 +209,6 @@ impl Contract {
                 num_transfers: U64(0),
                 metadata: TokenMetadata{
                     media: None,
-                    media_hash: None,
                     issued_at: Some(env::block_timestamp().to_string())
                 },
             },

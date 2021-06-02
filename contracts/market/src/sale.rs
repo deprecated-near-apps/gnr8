@@ -91,7 +91,7 @@ impl Contract {
     }
 
     #[payable]
-    pub fn offer(&mut self, nft_contract_id: ValidAccountId, token_id: String, memo: Option<String>) {
+    pub fn offer(&mut self, nft_contract_id: ValidAccountId, token_id: String, msg: Option<String>) {
         let contract_id: AccountId = nft_contract_id.into();
         let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         let sale = self.sales.get(&contract_and_token_id).expect("No sale");
@@ -107,13 +107,13 @@ impl Contract {
             .0;
 
         let deposit = env::attached_deposit();
-        let memo_is_some = memo.is_some();
+        let msg_is_some = msg.is_some();
         assert!(deposit > 0, "Attached deposit must be greater than 0");
         // there's a fixed price user can buy for so process purchase
         // or, with memo user is passing through their deposit
-        if deposit == price || memo_is_some {
+        if deposit == price || msg_is_some {
             let diff = deposit - price;
-            if memo_is_some {
+            if msg_is_some {
                 assert!(diff > 0, "Attached deposit must be greater than price (to pay for storage of minted NFT).");
             }
             self.process_purchase(
@@ -121,7 +121,7 @@ impl Contract {
                 contract_id,
                 token_id,
                 ft_token_id,
-                memo,
+                msg,
                 U128(deposit),
                 buyer_id,
             );
@@ -143,7 +143,7 @@ impl Contract {
         nft_contract_id: AccountId,
         token_id: String,
         ft_token_id: AccountId,
-        memo: Option<String>,
+        msg: Option<String>,
         paid: U128,
         buyer_id: AccountId,
     ) -> Promise {
@@ -162,7 +162,7 @@ impl Contract {
             buyer_id.clone(),
             token_id,
             sale.approval_id,
-            memo,
+            msg,
             price,
             &nft_contract_id,
             // price paid remains with contract (excess deposit for storage cost of series lazy mint)

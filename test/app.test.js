@@ -109,10 +109,14 @@ describe('deploy contract ' + contractName, () => {
 
 		aliceId = 'alice-' + t + '.' + contractId;
 		alice = await getAccount(aliceId);
+
+		bobId = 'bob-' + t + '.' + contractId;
+		bob = await getAccount(bobId);
+
 		lazyArgs = {
 			nft_contract_id: contractId,
 			token_id: reglExample2.series_name,
-			memo: JSON.stringify({
+			msg: JSON.stringify({
 				series_name: reglExample2.series_name,
 				mint: ['0.1'],
 				owner: [],
@@ -182,51 +186,51 @@ describe('deploy contract ' + contractName, () => {
 		expect(getRegl.src_hash).toEqual(regl.src_hash);
 	});
 
-	test('contract owner creates series', async () => {
-		await contractAccount.functionCall({
+	test('bob creates series', async () => {
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_create',
 			args: exampleArgs[0],
 			gas: GAS,
 			attachedDeposit:  parseNearAmount('0.9')
 		});
-		await contractAccount.functionCall({
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_update',
 			args: srcUpdateArgs[0],
 			gas: GAS,
 		});
-		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[0].series_name });
+		const series = await bob.viewFunction(contractId, 'series_data', { series_name: exampleArgs[0].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[0].src);
 	});
 
-	test('contract owner creates series and approves sale', async () => {
-		await contractAccount.functionCall({
+	test('bob creates series and approves sale', async () => {
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_create_and_approve',
 			args: {
 				...exampleArgs[2],
 				account_id: marketId,
-				msg: {
+				msg: JSON.stringify({
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount('1')}
 					]
-				}
+				})
 			},
 			gas: GAS,
 			attachedDeposit:  parseNearAmount('1')
 		});
-		await contractAccount.functionCall({
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_update',
 			args: srcUpdateArgs[2],
 			gas: GAS,
 		});
 
-		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[2].series_name });
+		const series = await bob.viewFunction(contractId, 'series_data', { series_name: exampleArgs[2].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[2].src);
 
-		const sales = await contractAccount.viewFunction(marketId, 'get_sales', {
+		const sales = await bob.viewFunction(marketId, 'get_sales', {
 			nft_contract_id: contractId,
 			from_index: '0',
 			limit: '50'
@@ -312,21 +316,21 @@ describe('deploy contract ' + contractName, () => {
 		}
 	});
 
-	test('owner creates NFT series', async () => {
-		await contractAccount.functionCall({
+	test('bob creates NFT series', async () => {
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_create',
 			args: exampleArgs[1],
 			gas: GAS,
 			attachedDeposit: parseNearAmount('1')
 		});
-		await contractAccount.functionCall({
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_update',
 			args: srcUpdateArgs[1],
 			gas: GAS,
 		});
-		const series = await contractAccount.viewFunction(contractId, 'series_data', { series_name: exampleArgs[1].series_name });
+		const series = await bob.viewFunction(contractId, 'series_data', { series_name: exampleArgs[1].series_name });
 		expect(series.src).toEqual(srcUpdateArgs[1].src);
 	});
 
@@ -346,27 +350,27 @@ describe('deploy contract ' + contractName, () => {
 		}
 	});
 
-	test('owner approves series for lazy minted NFT sales', async () => {
+	test('bob approves series for lazy minted NFT sales', async () => {
 		/// deposit = storagePerSale + 0.1 N to cover approval account_ids in the NFT contract
 		const deposit = new BN(storagePerSale).add(new BN(parseNearAmount('0.1'))).toString();
 
-		await contractAccount.functionCall({
+		await bob.functionCall({
 			contractId,
 			methodName: 'series_approve',
 			args: {
 				series_name: reglExample2.series_name,
 				account_id: marketId,
-				msg: {
+				msg: JSON.stringify({
 					sale_conditions: [
 						{ ft_token_id: "near", price: parseNearAmount('1')}
 					]
-				}
+				})
 			},
 			gas: GAS,
 			attachedDeposit: deposit
 		});
 
-		const get_sales = await contractAccount.viewFunction(marketId, 'get_sales', {
+		const get_sales = await bob.viewFunction(marketId, 'get_sales', {
 			nft_contract_id: contractId,
 			from_index: '0',
 			limit: '50'
@@ -374,7 +378,7 @@ describe('deploy contract ' + contractName, () => {
 		console.log('\n\n', get_sales, '\n\n');
 		expect(get_sales.length > 1).toEqual(true);
 
-		const sales_by_nft_contract_id = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_contract_id', {
+		const sales_by_nft_contract_id = await bob.viewFunction(marketId, 'get_sales_by_nft_contract_id', {
 			nft_contract_id: contractId,
 			from_index: '0',
 			limit: '50'
@@ -382,7 +386,7 @@ describe('deploy contract ' + contractName, () => {
 		console.log('\n\n', sales_by_nft_contract_id, '\n\n');
 		expect(sales_by_nft_contract_id.length > 1).toEqual(true);
 
-		const sales = await contractAccount.viewFunction(marketId, 'get_sales_by_nft_token_type', {
+		const sales = await bob.viewFunction(marketId, 'get_sales_by_nft_token_type', {
 			token_type: reglExample2.series_name,
 			from_index: '0',
 			limit: '100'
@@ -394,11 +398,11 @@ describe('deploy contract ' + contractName, () => {
 	test('alice purchases lazy minted NFT', async () => {
 		console.log('\n\n Market Balance:', await getAccountBalance(marketId), '\n\n');
 
-		const costEstimate = await contractAccount.functionCall({
+		const costEstimate = await alice.functionCall({
 			contractId,
 			methodName: 'estimate_mint_cost',
 			args: {
-				series_mint_args: JSON.parse(lazyArgs.memo)
+				series_mint_args: JSON.parse(lazyArgs.msg)
 			},
 			gas: GAS,
 		});

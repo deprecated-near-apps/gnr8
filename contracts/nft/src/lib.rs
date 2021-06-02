@@ -37,6 +37,7 @@ pub type TypeSupplyCaps = HashMap<String, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
 static SERIES_VARIANT_DELIMETER: &str = ":";
+static ARGS_DELIMETER: &str = ",";
 const GAS_FOR_SERIES_APPROVE: Gas = 20_000_000_000_000;
 const GAS_FOR_NFT_APPROVE: Gas = 10_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
