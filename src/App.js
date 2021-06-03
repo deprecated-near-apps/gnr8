@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 
-import { appStore, onAppMount } from './state/app';
+import { appStore, onAppMount, setDialog } from './state/app';
 import { networkId } from './state/near';
 import { useHistory, pathAndArgs } from './utils/history';
 
@@ -20,9 +20,9 @@ import './App.scss';
 
 const App = () => {
 	const { state, dispatch, update } = useContext(appStore);
-	const { app, app: { menu }, near, views, wallet, contractAccount, account, loading } = state;
+	const { app, app: { menu, dialog }, near, views, wallet, contractAccount, account, loading } = state;
 
-	const onMount = () => {
+	const onMount = async () => {
 		dispatch(onAppMount());
 	};
 	useEffect(onMount, []);
@@ -44,8 +44,33 @@ const App = () => {
 	return <>
 		{ loading && <div className="loading">
 			<img src={NearLogo} />
-		</div>
-		}
+		</div>}
+		
+		{dialog && <div className="dialog">
+			<div>
+				<div>
+					<div>{dialog.msg}</div>
+					{
+						dialog.input &&
+						dialog.input.map(({ placeholder, type = 'text' }, i) => <div key={i}>
+							<input id={"dialog-" + i} type={type} placeholder={placeholder} />
+						</div>)
+					}
+					{
+						dialog.choices &&
+						dialog.choices.map((label, i) => <>
+							<button key={i} onClick={() => dialog.resolve(label)}>{label}</button>
+						</>)
+					}
+					{!dialog.info && !dialog.choices && <button 
+						onClick={() => 
+							dialog.resolve(dialog.input.map((_, i) => document.querySelector('#dialog-' + i).value))
+						}
+					>Accept</button>}
+					<button onClick={() => dialog.reject()}>Close</button>
+				</div>
+			</div>
+		</div>}
 
 		<div className="menu">
 			<div className="bar">

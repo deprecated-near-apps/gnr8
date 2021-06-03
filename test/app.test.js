@@ -238,67 +238,67 @@ describe('deploy contract ' + contractName, () => {
 		expect(sales.filter((s) => s.token_id).length > 0).toEqual(true);
 	});
 
-	test('contract owner mints NFT in series', async () => {
-		const token_id = tokenIds[0];
+	// test('contract owner mints NFT in series', async () => {
+	// 	const token_id = tokenIds[0];
 
-		const costEstimate = await contractAccount.functionCall({
-			contractId,
-			methodName: 'estimate_mint_cost',
-			args: args1,
-			gas: GAS,
-		});
-		const deposit = Buffer.from(costEstimate?.status?.SuccessValue, 'base64').toString('utf-8');
+	// 	const costEstimate = await contractAccount.functionCall({
+	// 		contractId,
+	// 		methodName: 'estimate_mint_cost',
+	// 		args: args1,
+	// 		gas: GAS,
+	// 	});
+	// 	const deposit = Buffer.from(costEstimate?.status?.SuccessValue, 'base64').toString('utf-8');
 		
-		const bytesBefore = await getAccountBytes(contractId);
+	// 	const bytesBefore = await getAccountBytes(contractId);
 		
-		await contractAccount.functionCall({
-			contractId,
-			methodName: 'nft_mint',
-			args: args1,
-			gas: GAS,
-			attachedDeposit: deposit
-		});
+	// 	await contractAccount.functionCall({
+	// 		contractId,
+	// 		methodName: 'nft_mint',
+	// 		args: args1,
+	// 		gas: GAS,
+	// 		attachedDeposit: deposit
+	// 	});
 		
-		const bytesAfter = await getAccountBytes(contractId);
+	// 	const bytesAfter = await getAccountBytes(contractId);
 
-		console.log('\n\n costEstimate ', costEstimate, '\n\n');
-		console.log('\n\n bytesBefore ', bytesBefore, '\n\n');
-		console.log('\n\n bytesAfter ', bytesAfter, '\n\n');
+	// 	console.log('\n\n costEstimate ', costEstimate, '\n\n');
+	// 	console.log('\n\n bytesBefore ', bytesBefore, '\n\n');
+	// 	console.log('\n\n bytesAfter ', bytesAfter, '\n\n');
 
-		const { token } = await getTokenAndSrc(token_id);
-		expect(token.series_args.mint[0]).toEqual(args1.series_mint_args.mint[0]);
-	});
+	// 	const { token } = await getTokenAndSrc(token_id);
+	// 	expect(token.series_args.mint[0]).toEqual(args1.series_mint_args.mint[0]);
+	// });
 
-	test('contract owner tries to mint nft with duplicate args', async () => {
-		try {
-			await contractAccount.functionCall({
-				contractId,
-				methodName: 'nft_mint',
-				args: args1,
-				gas: GAS,
-				attachedDeposit: parseNearAmount('1')
-			});
-			expect(false);
-		} catch (e) {
-			expect(/using those args already exists/gi.test(e.toString()));
-		}
-	});
+	// test('contract owner tries to mint nft with duplicate args', async () => {
+	// 	try {
+	// 		await contractAccount.functionCall({
+	// 			contractId,
+	// 			methodName: 'nft_mint',
+	// 			args: args1,
+	// 			gas: GAS,
+	// 			attachedDeposit: parseNearAmount('1')
+	// 		});
+	// 		expect(false);
+	// 	} catch (e) {
+	// 		expect(/using those args already exists/gi.test(e.toString()));
+	// 	}
+	// });
 
-	test('contract owner can update their owner args', async () => {
-		const token_id = tokenIds[0];
-		await contractAccount.functionCall({
-			contractId,
-			methodName: 'update_token_owner_args',
-			args: {
-				token_id,
-				owner_args: ['0.1']
-			},
-			gas: GAS,
-			attachedDeposit: parseNearAmount('1')
-		});
-		const { token, src } = await getTokenAndSrc(token_id);
-		expect(token.series_args.owner[0]).toEqual('0.1');
-	});
+	// test('contract owner can update their owner args', async () => {
+	// 	const token_id = tokenIds[0];
+	// 	await contractAccount.functionCall({
+	// 		contractId,
+	// 		methodName: 'update_token_owner_args',
+	// 		args: {
+	// 			token_id,
+	// 			owner_args: ['0.1']
+	// 		},
+	// 		gas: GAS,
+	// 		attachedDeposit: parseNearAmount('1')
+	// 	});
+	// 	const { token, src } = await getTokenAndSrc(token_id);
+	// 	expect(token.series_args.owner[0]).toEqual('0.1');
+	// });
 
 	test('contract owner tries to mint more than supply', async () => {
 		try {

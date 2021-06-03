@@ -131,7 +131,7 @@ impl NonFungibleTokenCore for Contract {
         let (owner_id, token_id, approved_account_ids) = if let Some(msg) = msg {
             let series_mint_args: SeriesMintArgs =
                 near_sdk::serde_json::from_str(&msg).expect("Invalid SeriesMintArgs");
-            let (new_token_id, series_owner_id) = self.nft_mint(series_mint_args, Some(true));
+            let (new_token_id, series_owner_id) = self.lazy_mint(series_mint_args);
             (series_owner_id, new_token_id, HashMap::default())
         } else {
             let previous_token = self.internal_transfer(
@@ -254,6 +254,8 @@ impl NonFungibleTokenCore for Contract {
     #[payable]
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>) {
         assert_at_least_one_yocto();
+        
+        let initial_storage_usage = env::storage_usage();
         let account_id: AccountId = account_id.into();
 
         let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
@@ -279,7 +281,7 @@ impl NonFungibleTokenCore for Contract {
         token.next_approval_id += 1;
         self.tokens_by_id.insert(&token_id, &token);
 
-        refund_deposit(storage_used, None);
+        refund_deposit(initial_storage_usage, env::storage_usage(), None);
 
         if let Some(msg) = msg {
             ext_non_fungible_approval_receiver::nft_on_approve(

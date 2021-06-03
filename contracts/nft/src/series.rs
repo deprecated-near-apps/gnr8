@@ -10,6 +10,7 @@ pub struct SeriesMintArgs {
     pub owner: Vec<String>,
     pub perpetual_royalties: Option<HashMap<AccountId, u32>>,
     pub receiver_id: Option<ValidAccountId>,
+    pub media: Option<String>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -106,7 +107,7 @@ impl Contract {
 
         series.approved_account_ids.insert(account_id.as_ref());
 
-        let storage_used = bytes.0 + env::storage_usage() - initial_storage_usage;
+        let storage_cost = env::storage_byte_cost() * Balance::from(bytes.0 + env::storage_usage() - initial_storage_usage);
 
         if let Some(msg) = msg {
             ext_non_fungible_series_approval_receiver::series_on_approve(
@@ -115,8 +116,8 @@ impl Contract {
                 msg,
                 account_id.as_ref(),
                 env::attached_deposit()
-                    .checked_sub(env::storage_byte_cost() * Balance::from(storage_used))
-                    .expect("Must pay enough to cover storage"),
+                    .checked_sub(storage_cost)
+                    .expect("Deposit not enough for series"),
                 env::prepaid_gas() - GAS_FOR_SERIES_APPROVE,
             );
         }
@@ -135,8 +136,7 @@ impl Contract {
 
         self.series_create_internal(series_name, bytes, params, royalty);
 
-        let required_storage_in_bytes = bytes.0 + env::storage_usage() - initial_storage_usage;
-        refund_deposit(required_storage_in_bytes, None);
+        refund_deposit(initial_storage_usage, bytes.0 + env::storage_usage(), None);
     }
 
     fn series_create_internal(
@@ -258,77 +258,6 @@ impl Contract {
 
         series.src = Src::Code(src);
         self.series_by_name.insert(&series_name, &series);
-    }
-
-    /// token specific methods because they are part of this series
-
-    #[payable]
-    pub fn update_token_owner_args(&mut self, token_id: TokenId, owner_args: Vec<String>) {
-        assert_at_least_one_yocto();
-        let predecessor_account_id = env::predecessor_account_id();
-        let initial_storage_usage = env::storage_usage();
-
-        let token = self
-            .tokens_by_id
-            .get(&token_id)
-            .unwrap_or_else(|| panic!("No token {}", token_id));
-
-        assert_eq!(
-            token.owner_id, predecessor_account_id,
-            "Must be token owner"
-        );
-
-        let mut token_data = self
-            .token_data_by_id
-            .get(&token_id)
-            .unwrap_or_else(|| panic!("No token_data {}", token_id));
-
-        let series = self
-            .series_by_name
-            .get(&token_data.series_args.series_name)
-            .unwrap_or_else(|| panic!("No series {}", token_data.series_args.series_name));
-
-        assert_eq!(
-            series.params.owner.len(),
-            owner_args.len(),
-            "Incorrect length of owner_args for series"
-        );
-
-        if series.params.enforce_unique_owner_args {
-            let previous_owner_arg_hash = hash_account_id(&format!(
-                "{}{}",
-                series.series_name,
-                token_data.series_args.owner.join(ARGS_DELIMETER)
-            ));
-            self.series_owner_arg_hashes
-                .remove(&previous_owner_arg_hash);
-            let owner_arg_hash = hash_account_id(&format!(
-                "{}{}",
-                series.series_name,
-                owner_args.join(ARGS_DELIMETER)
-            ));
-            assert!(
-                self.series_owner_arg_hashes.insert(&owner_arg_hash),
-                "Token in series has identical owner args"
-            );
-        }
-
-        token_data.series_args.owner = owner_args;
-        self.token_data_by_id.insert(&token_id, &token_data);
-
-        // TODO clean up
-
-        let required_storage_in_bytes: i64 =
-            env::storage_usage() as i64 - initial_storage_usage as i64;
-        if required_storage_in_bytes < 0 {
-            let refund =
-                env::storage_byte_cost() * (initial_storage_usage - env::storage_usage()) as u128;
-            if refund > 1 {
-                Promise::new(predecessor_account_id).transfer(refund);
-            }
-        } else {
-            refund_deposit(required_storage_in_bytes as u64, None);
-        }
     }
 
     /// views

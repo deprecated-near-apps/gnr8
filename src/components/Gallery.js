@@ -9,6 +9,6 @@ export const Gallery = ({ dispatch, views, account }) => {
 		dispatch(loadGallery());
 	}, []);
 
-	return <Page {...{ dispatch, items: gallery }} />
+	return <Page {...{ dispatch, items: gallery }} />;
 };
 

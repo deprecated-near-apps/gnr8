@@ -15,7 +15,7 @@ const Item = (item) => {
 		} = {},
 		// for all items
 		dispatch, menu, handleOffer
-	} = item
+	} = item;
 
 	useEffect(() => {
 		dispatch(loadCodeFromSrc({
@@ -24,15 +24,20 @@ const Item = (item) => {
 	}, []);
 
 	if (is_token) {
-		args = item.series_args
+		args = item.series_args;
 	}
 
 	if (is_series) {
 		if (!params) {
-			params = item.params
+			params = item.params;
 		}
-		if (is_sale && !conditions) {
-			conditions = item.sale.conditions
+		if (is_sale) {
+			if (!!item.claimed) {
+				claimed = item.claimed;
+			}
+			if (!conditions) {
+				conditions = item.sale.conditions;
+			}
 		}
 	}
 
@@ -73,7 +78,7 @@ const Item = (item) => {
 			}
 		</div>
 	);
-}
+};
 
 export const Frame = ({
 	dispatch,
@@ -91,11 +96,11 @@ export const Page = ({
 	handleOffer = () => {},
 	numPerPage = NUM_PER_PAGE_DEFAULT,
 }) => {
-	const [page, setPage] = useState(0)
+	const [page, setPage] = useState(0);
 
-	const prevVisibility = page > 0 ? 'visible' : 'hidden'
-	const nextVisibility = (page+1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden'
-	items = items.slice(page * numPerPage, (page+1) * numPerPage)
+	const prevVisibility = page > 0 ? 'visible' : 'hidden';
+	const nextVisibility = (page+1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden';
+	items = items.slice(page * numPerPage, (page+1) * numPerPage);
 
 	return <>
 		<div className="pagination">
@@ -110,5 +115,5 @@ export const Page = ({
 			<div style={{visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
 		</div>
 	</>;
-}
+};
 

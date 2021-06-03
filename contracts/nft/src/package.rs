@@ -40,8 +40,7 @@ impl Contract {
             urls,
         });
 
-        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
-        refund_deposit(required_storage_in_bytes, None);
+        refund_deposit(initial_storage_usage, env::storage_usage(), None);
     }
 
     #[payable]
@@ -56,8 +55,7 @@ impl Contract {
         let mut package = self.packages_by_name_version.get(&name_version).unwrap_or_else(|| panic!("No package {}", name_version));
         package.urls.extend(urls);
 
-        let required_storage_in_bytes = env::storage_usage().saturating_sub(initial_storage_usage);
-        refund_deposit(required_storage_in_bytes, None);
+        refund_deposit(initial_storage_usage, env::storage_usage(), None);
     }
 
     /// views

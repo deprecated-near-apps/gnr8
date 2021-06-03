@@ -22,6 +22,6 @@ export const Market = ({ dispatch, views, account }) => {
 		}, GAS, item.sales[0].conditions.near);
 	};
 
-	return <Page {...{ dispatch, handleOffer, items: market }} />
+	return <Page {...{ dispatch, handleOffer, items: market }} />;
 };
 

@@ -9,12 +9,14 @@ import "ace-builds/src-min-noconflict/ext-searchbox";
 import "ace-builds/src-min-noconflict/ext-language_tools";
 import { getPackageRange } from '../state/views';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
+import { setDialog } from '../state/app';
 import { loadCodeFromSrc, getParams } from '../state/code';
 
 import { sha256 } from 'js-sha256';
 
 import { Menu } from './Menu';
 import { reglExample } from '../../test/examples/regl-example';
+import { reglExample2 } from '../../test/examples/regl-example-2';
 import { three1 } from '../../test/examples/three-1';
 import { three2 } from '../../test/examples/three-2';
 import { three3 } from '../../test/examples/three-3';
@@ -30,7 +32,7 @@ const examples = [
 	pixi,
 ];
 
-const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE';
+const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 
 export const Create = ({ app, views, update, dispatch, account }) => {
 
@@ -50,7 +52,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		await dispatch(getPackageRange());
 		onChange(p51.src, true);
 		checkSeriesUpdate();
-	}
+	};
 	useEffect(init, []);
 
 	const checkSeriesUpdate = async () => {
@@ -95,8 +97,22 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	};
 
 	const addPackage = async () => {
-		const name_version = window.prompt('name@version (exactly like this)');
-		const urls = [window.prompt('CDN URL?')];
+		const result = await dispatch(setDialog({
+			msg: 'Adding a JavaScript Library',
+			input: [
+				{placeholder: 'name@version (exactly like this)'},
+				{placeholder: 'CDN URL?'},
+			]
+		}));
+		if (!result) return;
+		const [name_version, url] = result;
+		if (!name_version.length || !url.length) {
+			return dispatch(setDialog({
+				msg: 'Enter a name@version and CDN URL',
+				info: true
+			}));
+		}
+		const urls = [url];
 		const src_hash = sha256(await fetch(urls[0]).then(r => r.text()));
 
 		await account.functionCall(contractId, 'add_package', {
@@ -109,9 +125,24 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const handleCreateSeries = async () => {
 		let { params } = getParams(code);
 
-		const series_name = window.prompt('Name of Series?').toLowerCase();
-		const sellNow = window.confirm('Sell series now?');
-		const price = window.prompt('What price in NEAR?');
+		const sellNow = true; //window.confirm('Sell series now?');
+		const result = await dispatch(setDialog({
+			msg: 'Creating New Series',
+			input: [
+				{placeholder: 'Series Name?'},
+				{placeholder: 'Unit Price in NEAR?', type: 'number'},
+			]
+		}));
+		if (!result) return;
+		const [series_name, price] = result;
+		if (!series_name.length || !/^\d+$/.test(price) || parseInt(price) === NaN) {
+			return dispatch(setDialog({
+				msg: 'Enter a Series Name and Price in NEAR',
+				info: true
+			}));
+		}
+		
+		// console.log(series_name, price)
 
 		set(PENDING_SERIES_UPDATE + account.accountId, { series_name, src: code, attempts: 0 });
 
@@ -122,7 +153,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			mint: Object.keys(params.mint),
 			owner: Object.keys(params.owner),
 			packages: params.packages,
-		}
+		};
 
 		if (sellNow) {
 			account.functionCall(contractId, 'series_create_and_approve', {
@@ -143,7 +174,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 				params,
 			}, GAS, parseNearAmount('1'));
 		}
-	}
+	};
 
 	const packageMenu = {
 		'- Add New Package': addPackage,
@@ -155,7 +186,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const examplesMenu = {};
 	examples.forEach(({ series_name, src }) => 
 		examplesMenu['- ' + series_name] = () => onChange(src, true)
-	)
+	);
 
 	const options = {
 		[preview ? '▷ Hide Preview' : '▷ Show Preview']: () => {
@@ -173,16 +204,16 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			close: false
 		},
 		...(showExamples ? examplesMenu : {}),
-		'▷ Max Supply': () => setCode(code.replace(/max_supply:.*,/g, `max_supply: '${window.prompt('What should the max supply be?')}',`)),
-		'▷ Add Mint Parameter': () => {
-			const index = code.indexOf('mint: {') + 'mint: {'.length;
-			setCode([
-				code.slice(0, index),
-				`\n\t\t${window.prompt('name')}: {\n\t\t\tdefault: ${window.prompt('default value')},\n\t\t\ttype: ${window.prompt('type')},\n\t\t},`,
-				code.slice(index)
-			].join(''));
-		},
-		'▷ Add Owner Parameter': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
+		// '▷ Max Supply': () => setCode(code.replace(/max_supply:.*,/g, `max_supply: '${window.prompt('What should the max supply be?')}',`)),
+		// '▷ Add Mint Parameter': () => {
+		// 	const index = code.indexOf('mint: {') + 'mint: {'.length;
+		// 	setCode([
+		// 		code.slice(0, index),
+		// 		`\n\t\t${window.prompt('name')}: {\n\t\t\tdefault: ${window.prompt('default value')},\n\t\t\ttype: ${window.prompt('type')},\n\t\t},`,
+		// 		code.slice(index)
+		// 	].join(''));
+		// },
+		// '▷ Add Owner Parameter': () => setCode(code.replace(new RegExp(`max_supply: .*,`, 'g'), `max_supply: '${window.prompt('what?')}',`)),
 	};
 
 	return <>

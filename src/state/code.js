@@ -9,21 +9,21 @@ export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => a
 		const { app: { consoleLog } } = getState();
 		update('app', {
 			consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
-		})
-		setTimeout(() => document.querySelector('.console .output').scrollTop = 999999, 150)
-	}
+		});
+		setTimeout(() => document.querySelector('.console .output').scrollTop = 999999, 150);
+	};
 	window.onmessage = ({ data }) => {
-		const { type, msg, byteLength } = data
+		const { type, msg, byteLength } = data;
 		if (byteLength) {
-			update('app', { image: data })
+			update('app', { image: data });
 		} else {
-			window.console[type](msg)
-			log(type + ': ' + msg)
+			window.console[type](msg);
+			log(type + ': ' + msg);
 		}
-	}
+	};
 	const { code, html, css, params, error } = getParams(src);
 	if (error) {
-		return log(error.message)
+		return log(error.message);
 	}
 	if (args) {
 		paramLabels.forEach((label) => {
@@ -46,7 +46,7 @@ export const getParams = (code) => {
 	try {
 		params = JSON5.parse(paramsMatch[0]);
 	} catch (e) {
-		console.warn(e)
+		console.warn(e);
 		return { error: e };
 	}
 	if (!params.mint) params.mint = {};
@@ -116,8 +116,8 @@ export const loadCode = async ({
 		code = code.replace(new RegExp(`{{${k}}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
 	));
 
-	code = code.replace(/{{OWNER_ID}}/g, `'${owner_id}'`)
-	code = code.replace(/{{NUM_TRANSFERS}}/g, num_transfers)
+	code = code.replace(/{{OWNER_ID}}/g, `'${owner_id}'`);
+	code = code.replace(/{{NUM_TRANSFERS}}/g, num_transfers);
 	const packages = await Promise.all(params.packages.map(async (name_version) => {
 		if (packageCache[name_version]) {
 			return packageCache[name_version];

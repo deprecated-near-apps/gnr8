@@ -26,20 +26,20 @@ pub(crate) fn assert_at_least_one_yocto() {
     )
 }
 
-pub(crate) fn refund_deposit(storage_used: u64, receiver_id: Option<AccountId>) {
-    let required_cost = env::storage_byte_cost() * Balance::from(storage_used);
-    let attached_deposit = env::attached_deposit();
+pub(crate) fn refund_deposit(initial_storage: u64, storage_used: u64, receiver_id: Option<AccountId>) {
 
-    assert!(
-        required_cost <= attached_deposit,
-        "Must attach {} yoctoNEAR to cover storage",
-        required_cost,
-    );
+    let refund = if storage_used > initial_storage {
+        env::attached_deposit()
+            .checked_sub(env::storage_byte_cost() * Balance::from(storage_used - initial_storage))
+            .expect("Insufficient deposit to pay for storage")
+    } else {
+        env::attached_deposit() + env::storage_byte_cost() * Balance::from(initial_storage - storage_used)
+    };
 
-    let refund = attached_deposit - required_cost;
     if refund > 1 {
         Promise::new(receiver_id.unwrap_or_else(env::predecessor_account_id)).transfer(refund);
     }
+    
 }
 
 // TODO: need a way for end users to determine how much an approval will cost.
