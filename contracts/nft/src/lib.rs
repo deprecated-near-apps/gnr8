@@ -8,6 +8,7 @@ use near_sdk::json_types::{Base64VecU8, ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::BorshStorageKey;
 use near_sdk::{
+    assert_one_yocto,
     env, ext_contract, log, near_bindgen, AccountId, Balance, CryptoHash, Gas, PanicOnDefault,
     Promise, PromiseResult, StorageUsage,
 };

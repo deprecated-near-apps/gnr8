@@ -4,7 +4,7 @@ import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { getToken } from '../state/views';
 import { get, set, del, ab2str, str2ab } from '../utils/storage';
-import { getFrameMedia, uploadMedia, setDialog } from '../state/app';
+import { getFrameMedia, uploadMedia, setDialog, getPrice } from '../state/app';
 import { Frame } from './Page';
 import { Params } from './Params';
 
@@ -16,9 +16,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 	const { token, storagePerSale } = views;
 	const isOwner = token?.owner_id === account?.accountId;
 
-	console.log(token);
-
-	const [state, setState] = useState({ args: {} });
+	const [state, setState] = useState({ args: {}, owner: {} });
 
 	useEffect(() => {
 		if (pathParts[2] && pathParts[2].length) dispatch(getToken(pathParts[2]));
@@ -128,20 +126,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 		let price = '0';
 		if (choice === 'Price') {
-			const result = await dispatch(setDialog({
-				msg: 'Sell Your Token',
-				input: [
-					{placeholder: 'Price in NEAR?', type: 'number'},
-				]
-			}));
-			if (!result) return;
-			const [userPrice] = result;
-			if (!/^\d+$/.test(userPrice) || parseInt(userPrice) === NaN) {
-				return dispatch(setDialog({
-					msg: 'Not a valid price. Try again!',
-					info: true
-				}));
-			}
+			const userPrice = await dispatch(getPrice('Sell Your Token'))
 			price = parseNearAmount(userPrice);
 		}
 
@@ -188,7 +173,9 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 	}
 	
 	const argVals = Object.values(state.args);
-	const isChanged = argVals.length && JSON.stringify(token.series_args.owner) !== JSON.stringify(argVals);
+	const isChanged = Object.values(owner).length &&
+		argVals.length &&
+		JSON.stringify(token.series_args.owner) !== JSON.stringify(argVals);
 
 	return <>
 		<div className="menu no-barcode">
@@ -218,7 +205,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		</div>
 
 		<div className="gallery">
-			<Frame {...{ dispatch, items: [token], menu: !isOwner }} />
+			<Frame {...{ dispatch, items: [token] }} />
 		</div>
 		{
 			isOwner && <div className="owner-params">

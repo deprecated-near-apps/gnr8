@@ -286,6 +286,18 @@ impl Contract {
             .map(|series_name| self.series_by_name.get(&series_name).unwrap().into())
             .collect()
     }
+    
+    pub fn series_supply_for_owner(
+        &self,
+        account_id: AccountId,
+    ) -> U64 {
+        let series_per_owner = self.series_per_owner.get(&account_id);
+        if let Some(series_per_owner) = series_per_owner {
+            U64(series_per_owner.len())
+        } else {
+            U64(0)
+        }
+    }
 
     pub fn series_per_owner(
         &self,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { loadEverythingForOwner } from '../state/views';
+import { loadEverythingForOwner, loadCollection } from '../state/views';
 import { loadCodeFromSrc } from '../state/code';
 import {Page} from './Page';
 
@@ -16,6 +16,7 @@ export const Collection = ({ dispatch, views, account, near }) => {
 	const items = [...tokensPerOwner, ...seriesPerOwner];
 
 	const mount = async () => {
+		dispatch(loadCollection(account.accountId))
 		const { tokensPerOwner, seriesPerOwner } = await dispatch(loadEverythingForOwner(account.accountId));
 		if ([...tokensPerOwner, ...seriesPerOwner].length === 0) {
 			return setLoading({
@@ -36,6 +37,6 @@ export const Collection = ({ dispatch, views, account, near }) => {
 			{ loading.cta }
 		</center>}
 
-		<Page {...{ dispatch, items }} />
+		<Page {...{ account, dispatch, items }} />
 	</>;
 };

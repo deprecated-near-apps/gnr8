@@ -11,7 +11,7 @@ const useSeriesCache = false;
 
 const id2series = (token_id) => token_id.split(SERIES_DELIMETER)[0];
 
-export const singleBatchCall = async (view, method = 'GET') => {
+export const singleBatchCall = async (view, method = 'GET', first = false) => {
 	let url = HELPER_URL;
 	let body;
 	if (method === 'POST') {
@@ -20,10 +20,14 @@ export const singleBatchCall = async (view, method = 'GET') => {
 	} else {
 		url += JSON.stringify([view]);
 	}
+	const headers = {
+		'near-network': networkId,
+	}
+	if (first) {
+		headers['max-age'] = '0'
+	}
 	return (await fetch(url, {
-		headers: {
-			'near-network': networkId,
-		},
+		headers: new Headers(headers),
 		method,
 		body,
 	}).then((res) => res.json()))[0];
@@ -49,7 +53,7 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 		sort: {
 			path: 'created_at',
 		}
-	});
+	}, 'GET', true);
 
 	const token_ids = sales.filter(({ is_series }) => !is_series).map(({ token_id }) => token_id);
 	const cachedSeriesNames = useSeriesCache ? Object.keys(seriesCache) : [];
@@ -96,8 +100,6 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 			},
 		}, 'POST')
 	]);
-
-	console.log(series);
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i];
@@ -283,7 +285,111 @@ export const loadSeries = () => async ({ getState, update, dispatch }) => {
 
 
 
-export const loadCollection = (owner_id) => async ({ getState, update, dispatch }) => {
+export const loadCollection = (account_id) => async ({ getState, update, dispatch }) => {
+	const { contractAccount } = getState();
+	
+	const numTokens = await contractAccount.viewFunction(contractId, 'nft_supply_for_owner', {
+		account_id
+	});
+
+	const numSeries = await contractAccount.viewFunction(contractId, 'series_supply_for_owner', {
+		account_id
+	});
+
+	const [tokens, series] = await Promise.all([
+		singleBatchCall({
+			contract: contractId,
+			method: 'nft_tokens_for_owner',
+			args: {
+				account_id,
+			}, 
+			batch: {
+				from_index: '0',
+				limit: numTokens,
+				step: '50',
+				flatten: []
+			},
+			sort: {
+				path: 'metadata.issued_at',
+			}
+		}, 'GET', true),
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_per_owner',
+			args: {
+				account_id,
+			}, 
+			batch: {
+				from_index: '0',
+				limit: numSeries,
+				step: '50',
+				flatten: []
+			},
+			sort: {
+				path: 'created_at',
+			}
+		}, 'GET', true),
+	]);
+
+	const sales_names = tokens.map(({ token_id }) => contractId + DELIMETER + token_id);
+	// const cachedSeriesNames = useSeriesCache ? Object.keys(seriesCache) : [];
+	const series_names = series.map(({ series_name }) => series_name);
+	
+	const [sales, seriesClaimed] = await Promise.all([
+		singleBatchCall({
+			contract: marketId,
+			method: 'get_sales_batch',
+			args: {
+				sales_names
+			},
+			batch: {
+				from_index: '0',
+				limit: sales_names.length.toString(),
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
+		singleBatchCall({
+			contract: contractId,
+			method: 'nft_supply_for_series_batch',
+			args: {
+				series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: series_names.length.toString(),
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST')
+	]);
+
+	series.forEach((s, i) => {
+		s.claimed = seriesClaimed[i];
+		seriesCache[s.series_name] = s;
+	});
+	// add cached series we removed from series_names arg to batch calls
+	// series.push(...Object.values(seriesCache));
+
+	// sales.forEach((sale) => {
+	// 	sale.is_sale = true;
+	// 	const { is_series, token_id } = sale;
+	// 	if (is_series) {
+	// 		sale.series = series.find(({ series_name }) => series_name === token_id);
+	// 		sale.id = token_id;
+	// 		sale.src = sale.series.src;
+	// 	} else {
+	// 		const series_name = sale.series_name = id2series(token_id);
+	// 		sale.token = tokens.find((t) => t.token_id === token_id);
+	// 		sale.series = series.find((s) => s.series_name === series_name);
+	// 		sale.id = token_id;
+	// 		sale.src = sale.series.src;
+	// 	}
+	// });
+
+	console.log(tokens, series, sales)
+
+	update('views', { collection: tokens });
 
 };
 

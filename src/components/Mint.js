@@ -107,6 +107,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 	let mintMenuOptions = {};
 	const params = [];
 	if (item) {
+
 		Object.entries(getParams(item.series.src).params.mint).forEach(([k, v]) => {
 			params.push({
 				name: k,
@@ -114,16 +115,38 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 				type: v.type
 			});
 		});
+
+		item.series.params.enforce_unique_mint_args
+
+
 		mintMenuOptions = {
 			[item.series.series_name]: {
 				frag: <>
-					<div>A itemable series with a total supply of {item.series.params.max_supply}.</div>
-					{ item.series.params.enforce_unique_mint_args &&
-					<div>
-						Each combination of minting parameters below
-						({item.series.params.mint.map((p) => p.name)})
-						must be unique from other minted tokens.
-					</div>}
+					{ item.series.params.mint.length && <>
+						<div>
+							Mint a variant of the series by choosing: { item.series.params.mint.join() }.
+						</div>
+						{ item.series.params.enforce_unique_mint_args &&
+							<div>
+								Mint values must be unique from other tokens minted.
+							</div>
+						}
+						</>
+					}
+					
+					{ item.series.params.owner.length && <>
+						<div>
+							Once you are an owner, you can update the following: { item.series.params.owner.join() }.
+						</div>
+						{ item.series.params.enforce_unique_owner_args &&
+							<div>
+								The owner values must be unique from other tokens.
+							</div>
+						}
+						</>
+					}
+
+					<div>Total supply of {item.series.params.max_supply}.</div>
 					<div>
 						Minting asks for more than list price to pay storage of your unique arguments on chain. You will be refunded any unused NEAR.
 					</div>

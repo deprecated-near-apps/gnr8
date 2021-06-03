@@ -267,17 +267,7 @@ impl NonFungibleTokenCore for Contract {
         );
 
         let approval_id: U64 = token.next_approval_id.into();
-        let is_new_approval = token
-            .approved_account_ids
-            .insert(account_id.clone(), approval_id)
-            .is_none();
-
-        let storage_used = if is_new_approval {
-            bytes_for_approved_account_id(&account_id)
-        } else {
-            0
-        };
-
+        token.approved_account_ids.insert(account_id.clone(), approval_id);
         token.next_approval_id += 1;
         self.tokens_by_id.insert(&token_id, &token);
 

@@ -37,6 +37,7 @@ impl FungibleTokenReceiver for Contract {
                 token_id,
                 ft_token_id,
                 None,
+                amount,
                 price,
                 sender_id,
             ).into()

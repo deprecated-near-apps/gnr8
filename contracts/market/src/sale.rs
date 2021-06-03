@@ -54,9 +54,7 @@ pub struct SeriesMintArgs {
 
 #[near_bindgen]
 impl Contract {
-    
     /// for add sale see: nft_callbacks.rs
-    
     #[payable]
     pub fn remove_sale(&mut self, nft_contract_id: ValidAccountId, token_id: String) {
         assert_one_yocto();
@@ -91,7 +89,12 @@ impl Contract {
     }
 
     #[payable]
-    pub fn offer(&mut self, nft_contract_id: ValidAccountId, token_id: String, msg: Option<String>) {
+    pub fn offer(
+        &mut self,
+        nft_contract_id: ValidAccountId,
+        token_id: String,
+        msg: Option<String>,
+    ) {
         let contract_id: AccountId = nft_contract_id.into();
         let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         let sale = self.sales.get(&contract_and_token_id).expect("No sale");
@@ -123,16 +126,11 @@ impl Contract {
                 ft_token_id,
                 msg,
                 U128(deposit),
+                U128(price),
                 buyer_id,
             );
         } else {
-            self.add_bid(
-                contract_and_token_id,
-                price,
-                deposit,
-                ft_token_id,
-                buyer_id,
-            )
+            self.add_bid(contract_and_token_id, price, deposit, ft_token_id, buyer_id)
         }
     }
 
@@ -145,14 +143,13 @@ impl Contract {
         ft_token_id: AccountId,
         msg: Option<String>,
         paid: U128,
+        price: U128,
         buyer_id: AccountId,
     ) -> Promise {
-
         if sale.is_series.is_none() {
             self.internal_remove_sale(nft_contract_id.clone(), token_id.clone());
         }
 
-        let price = sale.conditions[&ft_token_id];
         let mut nft_transfer_deposit = paid.0.saturating_sub(price.0);
         if nft_transfer_deposit < 1 {
             nft_transfer_deposit = 1
@@ -264,7 +261,12 @@ impl Contract {
         ft_token_id: AccountId,
         buyer_id: AccountId,
     ) {
-        assert!(price == 0 || amount < price, "Paid more {} than price {}", amount, price);
+        assert!(
+            price == 0 || amount < price,
+            "Paid more {} than price {}",
+            amount,
+            price
+        );
         // store a bid and refund any current bid lower
         let new_bid = Bid {
             owner_id: buyer_id,
@@ -290,12 +292,15 @@ impl Contract {
         self.sales.insert(&contract_and_token_id, &sale);
     }
 
+    #[payable]
     pub fn accept_offer(
         &mut self,
         nft_contract_id: ValidAccountId,
         token_id: String,
         ft_token_id: ValidAccountId,
     ) {
+        assert_one_yocto();
+
         let contract_id: AccountId = nft_contract_id.into();
         let contract_and_token_id = format!("{}{}{}", contract_id, DELIMETER, token_id);
         // remove bid before proceeding to process purchase
@@ -312,16 +317,14 @@ impl Contract {
             ft_token_id.into(),
             None,
             bid.price,
+            bid.price,
             bid.owner_id,
         );
     }
 
     /// internal
 
-    fn refund_bids(
-        &mut self,
-        bids: HashMap<FungibleTokenId, Bid>,
-    ) {
+    fn refund_bids(&mut self, bids: HashMap<FungibleTokenId, Bid>) {
         for (bid_ft, bid) in bids {
             if bid_ft == "near" {
                 Promise::new(bid.owner_id.clone()).transfer(u128::from(bid.price));

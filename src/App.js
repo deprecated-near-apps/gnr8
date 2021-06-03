@@ -13,6 +13,7 @@ import { Series } from './components/Series';
 import { Mint } from './components/Mint';
 import { Token } from './components/Token';
 import { Create } from './components/Create';
+import { Dialog } from './components/Dialog';
 
 import NearLogo from 'url:./img/near_icon.svg';
 
@@ -46,31 +47,7 @@ const App = () => {
 			<img src={NearLogo} />
 		</div>}
 		
-		{dialog && <div className="dialog">
-			<div>
-				<div>
-					<div>{dialog.msg}</div>
-					{
-						dialog.input &&
-						dialog.input.map(({ placeholder, type = 'text' }, i) => <div key={i}>
-							<input id={"dialog-" + i} type={type} placeholder={placeholder} />
-						</div>)
-					}
-					{
-						dialog.choices &&
-						dialog.choices.map((label, i) => <>
-							<button key={i} onClick={() => dialog.resolve(label)}>{label}</button>
-						</>)
-					}
-					{!dialog.info && !dialog.choices && <button 
-						onClick={() => 
-							dialog.resolve(dialog.input.map((_, i) => document.querySelector('#dialog-' + i).value))
-						}
-					>Accept</button>}
-					<button onClick={() => dialog.reject()}>Close</button>
-				</div>
-			</div>
-		</div>}
+		{dialog && <Dialog {...dialog} />}
 
 		<div className="menu">
 			<div className="bar">

@@ -35,7 +35,9 @@ const initialState = {
 		market: [],
 		gallery: [],
 		series: [],
+		collection: [],
 		mint: null,
+		
 	}
 };
 
@@ -61,6 +63,25 @@ export const setDialog = (dialog) => async ({ update, getState, dispatch }) => {
 		update('app', { dialog });
 	})
 };
+
+export const getPrice = (msg) => async({ dispatch }) => {
+	const result = await dispatch(setDialog({
+		msg,
+		input: [
+			{placeholder: 'Price in NEAR?', type: 'number'},
+		]
+	}));
+	if (!result) return;
+	const [userPrice] = result;
+	console.log(/^\d+$/.test(userPrice))
+	if (!/^-?\d*(\.\d+)?$/.test(userPrice)) {
+		return dispatch(setDialog({
+			msg: 'Not a valid price. Try again!',
+			info: true
+		}));
+	}
+	return userPrice
+}
 
 export const getFrameMedia = (id) => async ({ update, getState, dispatch }) => {
 	await update('app', { image: null });

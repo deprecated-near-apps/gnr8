@@ -11,6 +11,6 @@ export const Series = ({ dispatch, views, account }) => {
 		dispatch(loadSeries());
 	}, []);
 
-	return <Page {...{ dispatch, items: series }} />;
+	return <Page {...{ account, dispatch, items: series }} />;
 };
 
