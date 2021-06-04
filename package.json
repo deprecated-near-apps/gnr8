@@ -42,9 +42,19 @@
         "start:deploy": "yarn patch:deploy-config && cross-env REACT_APP_ENV=dev parcel src/index.html --open",
         "fix": "eslint src/ test/ --fix",
         "test:unit": "(cd contracts && cargo test -- --nocapture --color always)",
+        
         "prebuild": "rm -rf ./dist",
-        "patch:deploy-config": "node ./utils/patch-deploy-config.js",
         "build": "parcel build src/index.html --no-source-maps --public-url https://near-apps.github.io/nft-market/",
-        "deploy": "yarn patch:deploy-config && cross-env REACT_APP_ENV=dev yarn build && gh-pages -d dist"
+        
+
+        "start:testnet": "yarn config:testnet && cross-env REACT_APP_ENV=dev parcel src/index.html --open",
+
+        "env:testnet": "cross-env DEPLOY_ACCOUNT=gnr8-1.testnet REACT_APP_ENV=dev",
+        "config:testnet": "cross-env DEPLOY_ACCOUNT=gnr8-1.testnet yarn node ./utils/patch-config-account.js",
+        "deploy:testnet": "yarn env:testnet && yarn build:contracts && yarn node ./utils/patch-config-account.js && node ./utils/deploy.js",
+    
+        "deploy:app:testnet": "yarn env:testnet && yarn node ./utils/patch-config-account.js && yarn build && gh-pages -d dist",
+        
+        "add:packages": "cross-env REACT_APP_ENV=dev node ./utils/packages.js"
     }
 }

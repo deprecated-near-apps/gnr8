@@ -16,7 +16,8 @@ export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => a
 		const { type, msg, byteLength } = data;
 		if (byteLength) {
 			update('app', { image: data });
-		} else {
+		}
+		if (/log|warn|error/g.test(type)) {
 			window.console[type](msg);
 			log(type + ': ' + msg);
 		}

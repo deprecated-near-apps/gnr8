@@ -268,7 +268,6 @@ export const loadSeries = () => async ({ getState, update, dispatch }) => {
 		s.claimed = seriesClaimed[i];
 		if (sales[i]) {
 			s.sale = sales[i];
-			s.is_sale = true;
 		}
 		seriesCache[s.series_name] = s;
 		addCompatFields(s);
@@ -276,14 +275,6 @@ export const loadSeries = () => async ({ getState, update, dispatch }) => {
 
 	update('views', { series });
 };
-
-
-
-
-///  TODO upgrade the rest of the views to use api-helper
-
-
-
 
 export const loadCollection = (account_id) => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState();
@@ -331,11 +322,26 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 		}, 'GET', true),
 	]);
 
-	const sales_names = tokens.map(({ token_id }) => contractId + DELIMETER + token_id);
 	// const cachedSeriesNames = useSeriesCache ? Object.keys(seriesCache) : [];
 	const series_names = series.map(({ series_name }) => series_name);
-	
-	const [sales, seriesClaimed] = await Promise.all([
+	const token_series_names = tokens.map(({ token_id }) => id2series(token_id))
+	const sales_names = tokens.map(({ token_id }) => contractId + DELIMETER + token_id)
+		.concat(series_names.map((series_name) => contractId + DELIMETER + series_name));
+
+	let [tokenSeries, sales, seriesClaimed] = await Promise.all([
+		singleBatchCall({
+			contract: contractId,
+			method: 'series_batch',
+			args: {
+				series_names: token_series_names
+			},
+			batch: {
+				from_index: '0',
+				limit: token_series_names.length.toString(),
+				step: '50', // divides batch above
+				flatten: [],
+			},
+		}, 'POST'),
 		singleBatchCall({
 			contract: marketId,
 			method: 'get_sales_batch',
@@ -364,48 +370,58 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 		}, 'POST')
 	]);
 
+	sales = sales.filter((s) => !!s)
+
+	tokens.forEach((t, i) => {
+		const { token_id } = t
+		t.sale = sales.find((s) => s.token_id === token_id)
+		const series_name = t.series_name = id2series(token_id);
+		t.series = tokenSeries.find((s) => s.series_name === series_name);
+		addCompatFields(t)
+	});
+
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i];
-		seriesCache[s.series_name] = s;
+		s.sale = sales.find(({ token_id }) => s.series_name === token_id)
+		addCompatFields(s)
 	});
 	// add cached series we removed from series_names arg to batch calls
 	// series.push(...Object.values(seriesCache));
 
-	// sales.forEach((sale) => {
-	// 	sale.is_sale = true;
-	// 	const { is_series, token_id } = sale;
-	// 	if (is_series) {
-	// 		sale.series = series.find(({ series_name }) => series_name === token_id);
-	// 		sale.id = token_id;
-	// 		sale.src = sale.series.src;
-	// 	} else {
-	// 		const series_name = sale.series_name = id2series(token_id);
-	// 		sale.token = tokens.find((t) => t.token_id === token_id);
-	// 		sale.series = series.find((s) => s.series_name === series_name);
-	// 		sale.id = token_id;
-	// 		sale.src = sale.series.src;
-	// 	}
-	// });
+	const collection = [...tokens, ...series]
+	collection.sort((a, b) => 
+		parseInt(b?.metadata?.issued_at || b?.created_at || '0', 10) -
+		parseInt(a?.metadata?.issued_at || a?.created_at || '0', 10)
+	);
 
-	console.log(tokens, series, sales)
+	update('views', { collection });
 
-	update('views', { collection: tokens });
-
+	return collection
 };
 
 //TODO all should get codeId etc...
-const addCompatFields = (tokenOrSeries) => {
-	if (tokenOrSeries.series) {
-		tokenOrSeries.id = tokenOrSeries.token_id;
-		tokenOrSeries.src = tokenOrSeries.series.src;
-		tokenOrSeries.is_token = true;
+const addCompatFields = (item) => {
+	if (item.series) {
+		item.id = item.token_id;
+		item.src = item.series.src;
+		item.is_token = true;
 	} else {
-		const {series_name, src} = tokenOrSeries;
-		tokenOrSeries.id = series_name;
-		tokenOrSeries.src = src;
-		tokenOrSeries.is_series = true;
+		item.id = item.series_name;
+		item.is_series = true;
 	}
 };
+
+
+
+
+
+///  TODO upgrade the rest of the views to use api-helper
+
+
+
+
+
+
 export const getToken = (token_id) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	const token = await contractAccount.viewFunction(contractId, 'nft_token', {
@@ -437,57 +453,6 @@ export const getTokensForSeries = (series_name) => async ({ getState, update }) 
 		limit: '100',
 	});   
 };
-
-export const loadEverythingForOwner = (account_id) => async ({ update, getState }) => {
-	const { contractAccount, account } = getState();
-	const tokensPerOwner = await contractAccount.viewFunction(contractId, 'nft_tokens_for_owner', {
-		account_id,
-		from_index: '0',
-		limit: '100',
-	});
-	await Promise.all(tokensPerOwner.map(async (token) => {
-		token.is_token = true;
-		token.series = await loadSeriesName(contractAccount, token.series_args.series_name);
-		// alias for compat with tokens
-		addCompatFields(token);
-	}));
-	const seriesPerOwner = await contractAccount.viewFunction(contractId, 'series_per_owner', {
-		account_id,
-		from_index: '0',
-		limit: '100'
-	});
-	await Promise.all(seriesPerOwner.map(async (series) => {
-		series.is_series = true;
-		series.tokens = await contractAccount.viewFunction(contractId, 'nft_tokens_for_series', {
-			series_name: series.series_name,
-			from_index: '0',
-			limit: '100'
-		});
-		series.unsoldTokens = tokensPerOwner.filter(({ num_transfers, series_args: { series_name } }) => 
-			num_transfers === '0' && series_name === series.series_name
-		);
-		if (account) {
-			series.firstSales = (await contractAccount.viewFunction(marketId, 'get_sales_by_owner_id', {
-				account_id: account.accountId,
-				from_index: '0',
-				limit: '100'
-			})).filter(({ token_id, token_type }) => token_type === series.series_name &&
-                series.unsoldTokens.some(({ token_id: unsold_id }) => token_id === unsold_id)
-			);
-		}
-		addCompatFields(series);
-	}));
-	update('views', {
-		seriesPerOwner,
-		tokensPerOwner
-	});
-	return {
-		seriesPerOwner,
-		tokensPerOwner
-	};
-};
-
-
 
 export const loadSeriesName = async (contractAccount, series_name) => {
 	let series = seriesCache[series_name];

@@ -14,8 +14,7 @@ trait NonFungibleTokenApprovalsReceiver {
 
 #[near_bindgen]
 impl NonFungibleTokenApprovalsReceiver for Contract {
-    /// where we add the sale because we know nft owner can only call nft_approve
-
+    #[payable]
     fn nft_on_approve(
         &mut self,
         token_id: TokenId,
@@ -23,34 +22,9 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
         approval_id: U64,
         msg: String,
     ) {
-
-        // enforce cross contract calls and owner_id is signer
+        self.check_valid_callback(owner_id.clone());
 
         let nft_contract_id = env::predecessor_account_id();
-        let signer_id = env::signer_account_id();
-        assert_ne!(
-            nft_contract_id,
-            signer_id,
-            "nft_on_approve should only be called via cross-contract call"
-        );
-        assert_eq!(
-            owner_id.as_ref(),
-            &signer_id,
-            "owner_id should be signer_id"
-        );
-
-        // enforce signer's storage is enough to cover + 1 more sale 
-
-        let storage_amount = self.storage_amount().0;
-        let owner_paid_storage = self.storage_deposits.get(&signer_id).unwrap_or(0);
-        let signer_storage_required = (self.get_supply_by_owner_id(signer_id).0 + 1) as u128 * storage_amount;
-        assert!(
-            owner_paid_storage >= signer_storage_required,
-            "Insufficient storage paid: {}, for {} sales at {} rate of per sale",
-            owner_paid_storage, signer_storage_required / STORAGE_PER_SALE, STORAGE_PER_SALE
-        );
-
-        // proceed with adding sale
 
         let SaleArgs {
             sale_conditions,
@@ -94,12 +68,6 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
                 account_id_hash: hash_account_id(owner_id.as_ref()),
             })
         });
-
-        let owner_occupied_storage = u128::from(by_owner_id.len()) * STORAGE_PER_SALE;
-        assert!(
-            owner_paid_storage > owner_occupied_storage,
-            "User has more sales than storage paid"
-        );
         by_owner_id.insert(&contract_and_token_id);
         self.by_owner_id.insert(owner_id.as_ref(), &by_owner_id);
 
@@ -143,41 +111,7 @@ trait NonFungibleSeriesApprovalReceiver {
 impl NonFungibleSeriesApprovalReceiver for Contract {
     #[payable]
     fn series_on_approve(&mut self, series_name: String, owner_id: ValidAccountId, msg: String) {
-
-        // enforce cross contract calls and owner_id is signer
-
-        let nft_contract_id = env::predecessor_account_id();
-        let signer_id = env::signer_account_id();
-        assert_ne!(
-            nft_contract_id,
-            signer_id,
-            "nft_on_approve should only be called via cross-contract call"
-        );
-        assert_eq!(
-            owner_id.as_ref(),
-            &signer_id,
-            "owner_id should be signer_id"
-        );
-
-        // pay storage for 1 sale listing with attached deposit
-        let storage_amount = self.storage_amount().0;
-        self.storage_deposit(Some(owner_id.clone()), Some(storage_amount));
-        // refund excess attached deposit
-        let refund = env::attached_deposit().saturating_sub(storage_amount);
-        if refund > 1 {
-            Promise::new(owner_id.clone().into()).transfer(refund);
-        }
-            
-        // enforce signer's storage is enough to cover + 1 more sale 
-
-        let storage_amount = self.storage_amount().0;
-        let owner_paid_storage = self.storage_deposits.get(&signer_id).unwrap_or(0);
-        let signer_storage_required = (self.get_supply_by_owner_id(signer_id).0 + 1) as u128 * storage_amount;
-        assert!(
-            owner_paid_storage >= signer_storage_required,
-            "Insufficient storage paid: {}, for {} sales at {} rate of per sale",
-            owner_paid_storage, signer_storage_required / STORAGE_PER_SALE, STORAGE_PER_SALE
-        );
+        self.check_valid_callback(owner_id.clone());
 
         let nft_contract_id = env::predecessor_account_id();
 
@@ -224,11 +158,6 @@ impl NonFungibleSeriesApprovalReceiver for Contract {
             )
         });
 
-        let owner_occupied_storage = u128::from(by_owner_id.len()) * STORAGE_PER_SALE;
-        assert!(
-            owner_paid_storage > owner_occupied_storage,
-            "User has more sales than storage paid"
-        );
         by_owner_id.insert(&contract_and_token_id);
         self.by_owner_id.insert(owner_id.as_ref(), &by_owner_id);
 
@@ -256,5 +185,48 @@ impl NonFungibleSeriesApprovalReceiver for Contract {
         by_nft_token_type.insert(&contract_and_token_id);
         self.by_nft_token_type
             .insert(&series_name, &by_nft_token_type);
+    }
+
+}
+
+#[near_bindgen]
+impl Contract {
+
+    #[private]
+    pub fn check_valid_callback(&mut self, owner_id: ValidAccountId) {
+
+        // enforce cross contract calls and owner_id is signer
+
+        let nft_contract_id = env::predecessor_account_id();
+        let signer_id = env::signer_account_id();
+        assert_ne!(
+            nft_contract_id,
+            signer_id,
+            "nft_on_approve should only be called via cross-contract call"
+        );
+        assert_eq!(
+            owner_id.as_ref(),
+            &signer_id,
+            "owner_id should be signer_id"
+        );
+
+        // pay storage for 1 sale listing with attached deposit and refund the rest
+
+        let storage_amount = self.storage_amount().0;
+        self.storage_deposit(Some(owner_id.clone()), Some(storage_amount));
+        let refund = env::attached_deposit().saturating_sub(storage_amount);
+        if refund > 1 {
+            Promise::new(owner_id.clone().into()).transfer(refund);
+        }
+
+        // enforce owner's storage is enough to cover + 1 more sale 
+
+        let owner_paid_storage = self.storage_deposits.get(owner_id.as_ref()).unwrap_or(0);
+        let signer_storage_required = (self.get_supply_by_owner_id(owner_id.into()).0 + 1) as u128 * storage_amount;
+        assert!(
+            owner_paid_storage >= signer_storage_required,
+            "Insufficient storage paid: {}, for {} sales at {} rate of per sale",
+            owner_paid_storage, signer_storage_required / STORAGE_PER_SALE, STORAGE_PER_SALE
+        );
     }
 }

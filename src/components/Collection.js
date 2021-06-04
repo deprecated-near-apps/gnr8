@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { loadEverythingForOwner, loadCollection } from '../state/views';
-import { loadCodeFromSrc } from '../state/code';
+import { loadCollection } from '../state/views';
+import { acceptOffer } from '../state/actions';
 import {Page} from './Page';
 
 export const Collection = ({ dispatch, views, account, near }) => {
@@ -12,13 +12,13 @@ export const Collection = ({ dispatch, views, account, near }) => {
 		cta: null,
 	});
 
-	const { tokensPerOwner, seriesPerOwner } = views;
-	const items = [...tokensPerOwner, ...seriesPerOwner];
+	const { collection } = views;
+	
+	const items = collection;
 
 	const mount = async () => {
-		dispatch(loadCollection(account.accountId))
-		const { tokensPerOwner, seriesPerOwner } = await dispatch(loadEverythingForOwner(account.accountId));
-		if ([...tokensPerOwner, ...seriesPerOwner].length === 0) {
+		const items = await dispatch(loadCollection(account.accountId))
+		if (!items.length) {
 			return setLoading({
 				title: 'No Tokens',
 				sub: 'Try creating or purchasing a token from a series!',
@@ -37,6 +37,6 @@ export const Collection = ({ dispatch, views, account, near }) => {
 			{ loading.cta }
 		</center>}
 
-		<Page {...{ account, dispatch, items }} />
+		<Page {...{ account, dispatch, items, acceptOffer }} />
 	</>;
 };

@@ -2,6 +2,72 @@ import React, { useEffect, useState } from 'react';
 import { loadCodeFromSrc } from '../state/code';
 import { formatNearAmount } from '../utils/near-utils';
 
+const TopBar = (item) => {
+
+	let {
+		account,
+		dispatch,
+		series,
+		id,
+		is_owner, is_series,
+		conditions,
+		bids = {},
+		params,
+		claimed,
+		makeOffer, acceptOffer,
+	} = item;
+
+	if (!conditions) {
+		conditions = item.sale?.conditions
+		bids = item.sale?.bids
+	}
+	if (!account) return null
+
+	if (is_series) {
+		if (!conditions) return null
+		if (!claimed) claimed = series.claimed
+		return (
+			<div className="top-bar" onClick={() => history.push('/mint/' + id)}>
+				<div>{params.max_supply - claimed} / {params.max_supply}</div>
+				{claimed < params.max_supply &&
+					<div>{formatNearAmount(conditions.near)} Ⓝ</div>
+				}
+			</div>
+		)
+	}
+	if (!is_owner) {
+		if (!conditions) return null
+		return (
+			<div className="top-bar" onClick={() => dispatch(makeOffer(account, item, conditions.near))}>
+				<div>{conditions.near !== '0' ? 'Buy' : 'Make a Bid'}</div>
+				{
+					conditions.near !== '0'
+						?
+						<div>{formatNearAmount(conditions.near)} Ⓝ</div>
+						:
+						bids?.near &&
+						<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
+				}
+			</div>
+		)
+	}
+	if (bids?.near && acceptOffer) {
+		return (
+			<div className="top-bar" onClick={() => dispatch(acceptOffer(account, item, formatNearAmount(bids.near.price) + ' Ⓝ'))}>
+				<div>Accept Offer</div>
+				<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
+			</div>
+		)
+	}
+	if (!conditions) return null
+	return (
+		<div className="top-bar">
+			<div>You are selling</div>
+			<div>{conditions.near !== '0' ? <>{formatNearAmount(conditions.near)} Ⓝ</> : 'Open for Bids'}</div>
+		</div>
+	)
+}
+
 const Item = (item) => {
 
 	let {
@@ -9,14 +75,13 @@ const Item = (item) => {
 		id, src,
 		owner_id, is_sale, is_series, is_token,
 		conditions,
-		bids = {},
-		series: { params, claimed = 0 } = {},
+		series: { params } = {},
 		token: {
 			series_args: args,
 			num_transfers,
 		} = {},
 		// for all items
-		dispatch, menu, handleOffer, handleAcceptOffer
+		dispatch, menu,
 	} = item;
 
 	useEffect(() => {
@@ -33,69 +98,20 @@ const Item = (item) => {
 		if (!params) {
 			params = item.params;
 		}
-		if (is_sale) {
-			if (!!item.claimed) {
-				claimed = item.claimed;
-			}
-			if (!conditions) {
-				conditions = item.sale.conditions;
-			}
-		}
 	}
 
-	const isOwner = account?.accountId === owner_id
+	if (is_sale && !conditions) {
+		conditions = item.sale.conditions;
+	}
+
+	const is_owner = account?.accountId === owner_id
 
 	return (
 		<div key={id} className="iframe">
 			<iframe {...{ id }} />
 			{
 				menu && <>
-					{
-						is_sale && <>
-							{
-								is_series 
-								?
-								account && <div className="top-bar"
-									onClick={() => history.push('/mint/' + id)}
-								>
-									<div>{params.max_supply - claimed} / {params.max_supply}</div>
-									{claimed < params.max_supply &&
-										<div>{formatNearAmount(conditions.near)} Ⓝ</div>
-									}
-								</div>
-								:
-								account && !isOwner
-									?
-									<div className="top-bar"
-										onClick={() => handleOffer(item, conditions.near)}
-									>
-										<div>{conditions.near !== '0' ? 'Buy' : 'Make a Bid'}</div>
-										{
-											conditions.near !== '0'
-											?
-											<div>{formatNearAmount(conditions.near)} Ⓝ</div>
-											:
-											bids?.near &&
-											<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
-										}
-									</div>
-									:
-									(bids?.near && handleAcceptOffer)
-									?
-									<div className="top-bar"
-										onClick={() => handleAcceptOffer(item, formatNearAmount(bids.near.price) +  ' Ⓝ')}
-									>
-										<div>Accept Offer</div>
-										<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
-									</div>
-									:
-									<div className="top-bar">
-										<div>You are selling</div>
-										<div>{conditions.near !== '0' ? <>{formatNearAmount(conditions.near)} Ⓝ</> : 'Open for Bids'}</div>
-									</div>
-							}
-						</>
-					}
+					<TopBar {...{...item, dispatch, is_owner, params, conditions, }} />
 					{ menu !== 'onlyTop' && <div
 						className="bottom-bar"
 						onClick={() => is_series ? history.push('/mint/' + id) : history.push('/token/' + id)}
@@ -114,9 +130,8 @@ export const Frame = ({
 	account,
 	items,
 	menu = true,
-	handleOffer = () => {},
-	handleAcceptOffer,
-}) => items.map((item) => <Item {...{account, key: item.id, ...item, dispatch, menu, handleOffer, handleAcceptOffer}} />);
+	makeOffer, acceptOffer,
+}) => items.map((item) => <Item {...{ account, key: item.id, ...item, dispatch, menu, makeOffer, acceptOffer}} />);
 
 const NUM_PER_PAGE_DEFAULT = 4;
 
@@ -125,27 +140,26 @@ export const Page = ({
 	account,
 	items,
 	menu = true,
-	handleOffer = () => {},
-	handleAcceptOffer,
+	makeOffer, acceptOffer,
 	numPerPage = NUM_PER_PAGE_DEFAULT,
 }) => {
 	const [page, setPage] = useState(0);
 
 	const prevVisibility = page > 0 ? 'visible' : 'hidden';
-	const nextVisibility = (page+1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden';
-	items = items.slice(page * numPerPage, (page+1) * numPerPage);
+	const nextVisibility = (page + 1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden';
+	items = items.slice(page * numPerPage, (page + 1) * numPerPage);
 
 	return <>
 		<div className="pagination">
-			<div style={{visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
-			<div style={{visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
+			<div style={{ visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
+			<div style={{ visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
 		</div>
 		<div className="gallery">
-			<Frame {...{ account, dispatch, items, menu, handleOffer, handleAcceptOffer }} />
+			<Frame {...{ account, dispatch, items, menu, makeOffer, acceptOffer }} />
 		</div>
 		<div className="pagination bottom">
-			<div style={{visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
-			<div style={{visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
+			<div style={{ visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>
+			<div style={{ visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
 		</div>
 	</>;
 };

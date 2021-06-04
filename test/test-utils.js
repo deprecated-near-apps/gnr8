@@ -19,12 +19,9 @@ async function initContract() {
 			owner_id: contractAccount.accountId,
 			metadata: {
 				spec: 'nft-1',
-				name: 'Test NFT',
-				symbol: 'TNFT',
+				name: 'GNR8 NFTs',
+				symbol: 'GNR8',
 			},
-			supply_cap_by_type: {
-				test: '1000000',
-			}
 		};
 		await contract.new(newArgs);
 	} catch (e) {

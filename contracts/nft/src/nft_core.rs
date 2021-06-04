@@ -271,7 +271,7 @@ impl NonFungibleTokenCore for Contract {
         token.next_approval_id += 1;
         self.tokens_by_id.insert(&token_id, &token);
 
-        refund_deposit(initial_storage_usage, env::storage_usage(), None);
+        let storage_cost = env::storage_byte_cost() * Balance::from(env::storage_usage() - initial_storage_usage);
 
         if let Some(msg) = msg {
             ext_non_fungible_approval_receiver::nft_on_approve(
@@ -280,10 +280,11 @@ impl NonFungibleTokenCore for Contract {
                 approval_id,
                 msg,
                 &account_id,
-                NO_DEPOSIT,
+                env::attached_deposit()
+                    .checked_sub(storage_cost)
+                    .expect("Deposit not enough for approval"),
                 env::prepaid_gas() - GAS_FOR_NFT_APPROVE,
-            )
-            .as_return(); // Returning this promise
+            );
         }
     }
 

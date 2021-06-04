@@ -42,6 +42,17 @@ const App = () => {
 
 	if (!contractAccount) return null;
 
+	const options = {
+		'Market ᐊ': () => history.push('/'),
+		'Series ᐊ': () => history.push('/series'),
+		'Gallery ᐊ': () => history.push('/gallery'),
+	}
+
+	if (account) {
+		options['Collection ᐊ'] = () => history.push('/collection')
+		options['Create ᐊ'] = () => history.push('/create')
+	}
+
 	return <>
 		{ loading && <div className="loading">
 			<img src={NearLogo} />
@@ -74,13 +85,7 @@ const App = () => {
 						}
 					}} />}
 					{menu === 'right' && <Menu {...{
-						app, menuKey: 'menu', update, options: {
-							'Market ᐊ': () => history.push('/'),
-							'Series ᐊ': () => history.push('/series'),
-							'Gallery ᐊ': () => history.push('/gallery'),
-							'Collection ᐊ': () => history.push('/collection'),
-							'Create ᐊ': () => history.push('/create'),
-						}
+						app, menuKey: 'menu', update, options
 					}} />}
 				</div>
 			}

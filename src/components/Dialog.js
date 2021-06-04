@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-export const Dialog = ({ resolve, reject, msg, choices, input, info = false }) => {
+export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, info = false }) => {
     
     useEffect(() => {
         if (input) document.querySelector('#dialog-input-0').focus()
@@ -26,14 +26,12 @@ export const Dialog = ({ resolve, reject, msg, choices, input, info = false }) =
                     }
                     {
                         choices &&
-                        choices.map((label, i) => <>
-                            <button key={i} onClick={() => resolve(label)}>{label}</button>
-                        </>)
+                        choices.map((label, i) => <button key={i} onClick={() => resolve(label)}>{label}</button>)
                     }
                     {!info && !choices && <button
                         onClick={resolveInput}
                     >Accept</button>}
-                    <button onClick={() => reject()}>Close</button>
+                    {!noClose && <button onClick={() => reject()}>Close</button>}
                 </div>
             </div>
         </div>
