@@ -116,12 +116,16 @@ export const loadCode = async ({
 	owner_id = 'account.near',
 	num_transfers = 0
 }) => {
-	paramLabels.forEach((label) => Object.entries(params[label]).forEach(([k, v]) =>
-		code = code.replace(new RegExp(`{{${k}}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
-	));
+	
+	paramLabels.forEach((label) => Object.entries(params[label]).forEach(([k, v]) => {
+		// console.log(k)
+		// const re = new RegExp(`{{\\s\*${k}\\s\*}}`, 'g')
+		// console.log(re.test(code))
+		code = code.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
+	}));
 
-	code = code.replace(/{{OWNER_ID}}/g, `'${owner_id}'`);
-	code = code.replace(/{{NUM_TRANSFERS}}/g, num_transfers);
+	code = code.replace(/{{\s*OWNER_ID\s*}}/g, `'${owner_id}'`);
+	code = code.replace(/{{\s*NUM_TRANSFERS\s*}}/g, num_transfers);
 	const packages = await Promise.all(params.packages.map(async (name_version) => {
 		if (packageCache[name_version]) {
 			return packageCache[name_version];

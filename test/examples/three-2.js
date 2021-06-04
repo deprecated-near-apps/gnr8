@@ -1,6 +1,6 @@
 
 exports.three2 = {
-	series_name: 'three-2',
+	series_name: 'ThreeJS 2',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: true,

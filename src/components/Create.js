@@ -21,15 +21,17 @@ import { three1 } from '../../test/examples/three-1';
 import { three2 } from '../../test/examples/three-2';
 import { three3 } from '../../test/examples/three-3';
 import { p51 } from '../../test/examples/p5-1';
+import { p52 } from '../../test/examples/p5-2';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	p52,
+	p51,
 	reglExample,
+	pixi,
 	three1,
 	three2,
 	three3,
-	p51,
-	pixi,
 ];
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
@@ -80,7 +82,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (target) => {
 		editor = target;
-		onChange(p51.src, true);
+		onChange(p52.src, true);
 	};
 
 	const onChange = async (newValue, showPreview = false) => {

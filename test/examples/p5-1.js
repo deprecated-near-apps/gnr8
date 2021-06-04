@@ -1,6 +1,6 @@
 
 exports.p51 = {
-	series_name: 'p5-1',
+	series_name: 'Processing Conway',
 	params: {
 		max_supply: '200',
 		enforce_unique_mint_args: true,

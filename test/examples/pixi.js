@@ -1,6 +1,6 @@
 
 exports.pixi = {
-	series_name: 'pixi-1',
+	series_name: 'PixiJS',
 	params: {
 		max_supply: '100',
 		mint: [],
