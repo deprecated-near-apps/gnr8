@@ -2,15 +2,9 @@
 exports.pixi = {
 	series_name: 'pixi-1',
 	params: {
-		max_supply: '200',
-		enforce_unique_mint_args: false,
-		enforce_unique_owner_args: false,
-		mint: [
-			'seed'
-		],
-		owner: [
-			'speed'
-		],
+		max_supply: '100',
+		mint: [],
+		owner: [],
 		packages: [
 			'pixi@5.1.3'
 		]
@@ -18,8 +12,13 @@ exports.pixi = {
 	src: `@params
     {
         packages: ['pixi@5.1.3'],
-        max_supply: '200',
+		enforce_unique_mint_args: true,
+        max_supply: '100',
         mint: { 
+            backgroundColor: {
+                default: '0xF099bb',
+                type: 'color-hex',
+            }
         },
         owner: {
         }
@@ -31,7 +30,10 @@ exports.pixi = {
     @css
     
     @js
-const app = new PIXI.Application({ backgroundColor: 0x1099bb });
+
+const backgroundColor = {{backgroundColor}}
+
+const app = new PIXI.Application({ backgroundColor });
 document.body.appendChild(app.view);
 
 // create a texture from an image path

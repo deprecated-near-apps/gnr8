@@ -22,7 +22,7 @@ exports.three3 = {
         mint: {
             backgroundColor: {
                 default: '"rgba(0, 0, 0 , 1)"',
-                type: 'rgba-color',
+                type: 'color-rgba',
             },
         },
         owner: {

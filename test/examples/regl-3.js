@@ -21,7 +21,7 @@ exports.regl3 = {
     mint: {
         backgroundColor: {
             default: [0, 0, 0, 1],
-            type: 'webgl-color',
+            type: 'color-webgl',
         },
     },
     owner: {

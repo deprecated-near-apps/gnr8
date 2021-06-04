@@ -18,9 +18,16 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	const [state, setState] = useState({ args: {}, owner: {} });
 
-	useEffect(() => {
-		if (pathParts[2] && pathParts[2].length) dispatch(getToken(pathParts[2]));
-	}, []);
+	const mount = async() => {
+		if (pathParts[2] && pathParts[2].length) {
+			const result = await dispatch(getToken(pathParts[2]))
+			if (!result) {
+				// might have been a series, redirect to mint series
+				history.push('/mint/' + pathParts[2])
+			}
+		};
+	}
+	useEffect(mount, []);
 
 	useEffect(() => {
 		if (!token) return;

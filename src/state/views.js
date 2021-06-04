@@ -1,18 +1,23 @@
 import { marketId, contractId, networkId } from './near';
+import { ORIGINAL_PATH } from '../utils/history'
 
 const DELIMETER = '||';
 const SERIES_DELIMETER = ':';
-const HELPER_URL = 'https://helper.nearapi.org/v1/batch/';
+const HELPER_URL = 'https://helper.nearapi.org/';
+const BATCH_URL = HELPER_URL + 'v1/batch/';
+const SHARE_URL = HELPER_URL + 'v1/share/';
 
 // TODO cache series and tokens already seen
 const seriesCache = {};
 // const tokenCache = {};
 const useSeriesCache = false;
 
+/// helpers
+
 const id2series = (token_id) => token_id.split(SERIES_DELIMETER)[0];
 
-export const singleBatchCall = async (view, method = 'GET', first = false) => {
-	let url = HELPER_URL;
+const singleBatchCall = async (view, method = 'GET', first = false) => {
+	let url = BATCH_URL;
 	let body;
 	if (method === 'POST') {
 		body = JSON.stringify([view]);
@@ -32,6 +37,23 @@ export const singleBatchCall = async (view, method = 'GET', first = false) => {
 		body,
 	}).then((res) => res.json()))[0];
 };
+
+/// sharing urls to nfts
+
+export const getShareUrl = async ({
+	nft,
+	title = 'GNR8 Generative NFTs',
+	description = 'Check out this generative NFT on GNR8!'
+}) => {
+	return (await fetch(SHARE_URL + JSON.stringify({
+		title,
+		description,
+		nft,
+		redirect: encodeURIComponent(window.origin + ORIGINAL_PATH + '/#/token/' + nft.tokenId)
+	})).then((res) => res.json())).encodedUrl;
+};
+
+/// route views
 
 export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	const { contractAccount } = getState();
@@ -427,6 +449,9 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 	const token = await contractAccount.viewFunction(contractId, 'nft_token', {
 		token_id,
 	});
+	if (!token) {
+		return false
+	}
 	token.is_token = true;
 	token.series = await loadSeriesName(contractAccount, token.series_args.series_name);
 	token.sales = [await contractAccount.viewFunction(marketId, 'get_sale', {
@@ -434,6 +459,7 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 	})];
 	addCompatFields(token);
 	update('views', { token });
+	return token
 };
 
 export const getPackageRange = (from_index = '0', limit = '100') => async ({ getState, update }) => {

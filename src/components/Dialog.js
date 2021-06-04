@@ -11,9 +11,12 @@ export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, 
     }
 
     return (
-        <div className="dialog">
+        <div className="dialog" onClick={() => reject()}>
             <div>
-                <div>
+                <div onClick={(e) => {
+                    e.stopPropagation()
+                    return false
+                }}>
                     <div>{msg}</div>
                     {
                         input &&

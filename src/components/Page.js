@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { loadCodeFromSrc } from '../state/code';
+import { contractId } from '../state/near';
+import { getShareUrl } from '../state/views';
+import { share } from '../utils/mobile';
+import { setDialog } from '../state/app';
 import { formatNearAmount } from '../utils/near-utils';
 
 const TopBar = (item) => {
@@ -112,6 +116,22 @@ const Item = (item) => {
 			{
 				menu && <>
 					<TopBar {...{...item, dispatch, is_owner, params, conditions, }} />
+
+					<div className="share"
+						onClick={async () => {
+							const { mobile } = share(await getShareUrl({
+								nft: { contractId, tokenId: id }
+							}))
+							if (!mobile) {
+								dispatch(setDialog({
+									msg: `Link Copied to Clipboard (Control-C)`,
+									choices: ['Ok'],
+									noClose: true,
+								}))
+							}
+						}}
+					>&#128279;</div>
+
 					{ menu !== 'onlyTop' && <div
 						className="bottom-bar"
 						onClick={() => is_series ? history.push('/mint/' + id) : history.push('/token/' + id)}
@@ -119,6 +139,7 @@ const Item = (item) => {
 						<div>{id}</div>
 						<div>{owner_id}</div>
 					</div>}
+					
 				</>
 			}
 		</div>

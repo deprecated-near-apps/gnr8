@@ -10,7 +10,10 @@ export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => a
 		update('app', {
 			consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
 		});
-		setTimeout(() => document.querySelector('.console .output').scrollTop = 999999, 150);
+		const output = document.querySelector('.console .output')
+		if (output) {
+			setTimeout(() => output.scrollTop = 999999, 150);
+		}
 	};
 	window.onmessage = ({ data }) => {
 		const { type, msg, byteLength } = data;
@@ -84,14 +87,14 @@ const iframeTemplate = `
         <script>
 			['log', 'warn', 'error'].forEach((type) => {
 				window.console[type] = (msg) => {
-					parent.postMessage({ msg, type }, 'http://localhost:1234/');
+					parent.postMessage({ msg, type }, '${window.location.origin}');
 				}
 			})
 			window.onmessage = ({data}) => {
 				if (data.type === 'image') {
 					document.querySelector('canvas').toBlob(async (blob) => {
 						const image = await blob.arrayBuffer()
-						parent.postMessage(image, 'http://localhost:1234/', [image]);
+						parent.postMessage(image, '${window.location.origin}', [image]);
 					})
 				}
 			}

@@ -21,7 +21,7 @@ const initialState = {
 		pendingApprovals: []
 	},
 	views: {
-		NUM_PER_PAGE: 4,
+		NUM_PER_PAGE: 6,
 
 		storagePerSale: null,
 		tokensPerOwner: [],

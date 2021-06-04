@@ -34,6 +34,8 @@ const examples = [
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 
+let changeTimeout
+
 export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const { createMenu, consoleLog } = app;
@@ -86,7 +88,10 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const onChange = async (newValue, showPreview) => {
 		setCode(newValue);
 		setPreview(preview || showPreview === true);
-		updateEditorAndPreview(editor, newValue);
+		if (changeTimeout) {
+			clearTimeout(changeTimeout)
+		}
+		setTimeout(() => updateEditorAndPreview(editor, newValue), 500)
 	};
 
 	const includePackage = (i) => {
@@ -242,7 +247,6 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 					width="100%"
 					height="100%"
 					fontSize="0.8rem"
-					debounceChangePeriod={100}
 					editorProps={{
 						$blockScrolling: true,
 					}}
