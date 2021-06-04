@@ -98,7 +98,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		const newArgs = { ...args, [name]: value };
 		setState({ args: newArgs });
 		let newCode = item.series.src;
-		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), v));
 		dispatch(loadCodeFromSrc({
 			id: item.series.series_name, src: newCode, owner_id: item.owner_id
 		}));
