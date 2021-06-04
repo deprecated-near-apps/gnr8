@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 
+const ORIGINAL_PATH = location.pathname;
+
 (function(history){
 	var pushState = history.pushState;
 	history.pushState = function(state) {
@@ -15,7 +17,7 @@ import { useEffect } from 'react';
 export const useHistory = (callback, hash = false) => {
 	if (hash) {
 		window.history.push = (path) => {
-			window.history.pushState({}, '', window.location.origin + '/#' + path);
+			window.history.pushState({}, '', window.location.origin + ORIGINAL_PATH + '#' + path);
 		};
 	} else {
 		window.history.push = (path) => {
@@ -31,13 +33,17 @@ export const useHistory = (callback, hash = false) => {
 };
 
 export const pathAndArgs = () => {
-	let path = window.location.href;
-	let args = url2args(window.location.href);
-	if (path.indexOf('#') > -1) {
-		path = path.split('#/')[1].split('?')[0];
-		args = url2args(window.location.href.replace('/#/', '/'));
+	let path = window.location.href
+	let args;
+	if (path.indexOf('/#/') > -1) {
+		args = url2args(path);
+		path = path.split('/#/')[1].split('?')[0];
 	} else {
+		args = url2args(path)
 		path = window.location.pathname;
+	}
+	if (ORIGINAL_PATH.length > 1) {
+		path = path.replace(ORIGINAL_PATH, '');
 	}
 	path = ('/' + path.split('/').filter(s => !!s.length).join('/').toLowerCase());
 	return {

@@ -53,6 +53,8 @@ const App = () => {
 		options['Create ᐊ'] = () => history.push('/create')
 	}
 
+	console.log(path)
+
 	return <>
 		{ loading && <div className="loading">
 			<img src={NearLogo} />
