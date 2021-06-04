@@ -7,6 +7,7 @@
     "dependencies": {
         "ace-builds": "^1.4.12",
         "bn": "^1.0.5",
+        "buffer": "^6.0.3",
         "copy-to-clipboard": "^3.3.1",
         "js-sha256": "^0.9.0",
         "json5": "^2.2.0",
@@ -42,20 +43,14 @@
         "start:deploy": "yarn patch:deploy-config && cross-env REACT_APP_ENV=dev parcel src/index.html --open",
         "fix": "eslint src/ test/ --fix",
         "test:unit": "(cd contracts && cargo test -- --nocapture --color always)",
-        
         "prebuild": "rm -rf ./dist",
         "build": "cross-env REACT_APP_ENV=dev REACT_APP_API_HELPER=true parcel build src/index.html --no-source-maps --public-url https://near-apps.github.io/gnr8/",
         "build:local": "cross-env REACT_APP_ENV=dev REACT_APP_API_HELPER=true parcel build src/index.html --no-source-maps",
-        
         "start:testnet": "yarn config:testnet && cross-env REACT_APP_ENV=dev parcel src/index.html --open",
-
         "env:testnet": "cross-env DEPLOY_ACCOUNT=gnr8-1.testnet REACT_APP_ENV=dev",
         "config:testnet": "cross-env DEPLOY_ACCOUNT=gnr8-1.testnet yarn node ./utils/patch-config-account.js",
         "deploy:testnet": "yarn env:testnet && yarn build:contracts && yarn node ./utils/patch-config-account.js && node ./utils/deploy.js",
-    
-
         "deploy:app:testnet": "cross-env DEPLOY_ACCOUNT=gnr8-1.testnet yarn node ./utils/patch-config-account.js && yarn build && gh-pages -d dist",
-        
         "add:packages": "cross-env REACT_APP_ENV=dev node ./utils/packages.js"
     }
 }

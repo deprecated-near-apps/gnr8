@@ -13,13 +13,8 @@ export const set = (k, v) => localStorage.setItem(k, typeof v === 'string' ? v :
 export const del = (k) => localStorage.removeItem(k);
 
 export function ab2str(buf) {
-	return String.fromCharCode.apply(null, new Uint8Array(buf));
+	return Buffer.from(buf).toString('base64')
 }
 export function str2ab(str) {
-	var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
-	var bufView = new Uint8Array(buf);
-	for (var i = 0, strLen = str.length; i < strLen; i++) {
-		bufView[i] = str.charCodeAt(i);
-	}
-	return buf;
+	return new Uint8Array(Buffer.from(str, 'base64'))
 }

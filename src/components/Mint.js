@@ -47,6 +47,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 	const handleImage = async () => {
 		if (!image) return;
+		
 		// stash image in localStorage
 		set(PENDING_IMAGE_UPLOAD + account.accountId, { image: ab2str(image) });
 		//mint token
