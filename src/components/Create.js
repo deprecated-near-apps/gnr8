@@ -34,7 +34,7 @@ const examples = [
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 
-let changeTimeout
+let changeTimeout, editor;
 
 export const Create = ({ app, views, update, dispatch, account }) => {
 
@@ -44,7 +44,6 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const [console, setConsole] = useState(false);
 	const [preview, setPreview] = useState(false);
 	const [code, setCode] = useState();
-	const [editor, setEditor] = useState();
 	const [sideBy, setSideBy] = useState(true);
 	const [showPackages, setShowPackages] = useState(false);
 	const [showExamples, setShowExamples] = useState(false);
@@ -52,7 +51,6 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const init = async () => {
 		await dispatch(getPackageRange());
-		onChange(p51.src, true);
 		checkSeriesUpdate();
 	};
 	useEffect(init, []);
@@ -69,8 +67,8 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}
 	};
 
-	const updateEditorAndPreview = (editor, newValue) => {
-		if (!editor || !code) return;
+	const updateEditorAndPreview = (newValue) => {
+		if (!newValue) return;
 		dispatch(loadCodeFromSrc({
 			id: 'create-preview', src: newValue || code,
 		}));
@@ -80,18 +78,18 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}, 250);
 	};
 
-	const onLoad = (editor) => {
-		setEditor(editor);
-		updateEditorAndPreview(editor);
+	const onLoad = (target) => {
+		editor = target;
+		onChange(p51.src, true);
 	};
 
-	const onChange = async (newValue, showPreview) => {
+	const onChange = async (newValue, showPreview = false) => {
 		setCode(newValue);
-		setPreview(preview || showPreview === true);
+		setPreview(preview || showPreview);
 		if (changeTimeout) {
-			clearTimeout(changeTimeout)
+			clearTimeout(changeTimeout);
 		}
-		setTimeout(() => updateEditorAndPreview(editor, newValue), 500)
+		setTimeout(() => updateEditorAndPreview(newValue), 500);
 	};
 
 	const includePackage = (i) => {

@@ -116,7 +116,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			});
 		});
 
-		item.series.params.enforce_unique_mint_args
+		item.series.params.enforce_unique_mint_args;
 
 
 		mintMenuOptions = {
@@ -131,7 +131,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 								Mint values must be unique from other tokens minted.
 							</div>
 						}
-						</>
+					</>
 					}
 					
 					{ item.series.params.owner.length && <>
@@ -143,7 +143,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 								The owner values must be unique from other tokens.
 							</div>
 						}
-						</>
+					</>
 					}
 
 					<div>Total supply of {item.series.params.max_supply}.</div>

@@ -197,6 +197,7 @@ section {
 
 .create {
     .editor {
+        border-bottom: 0.5px solid black;
         width: 100%;
         height: calc(100vh - 7rem);
         &.preview {
@@ -213,7 +214,6 @@ section {
         height: calc(50vh - 3rem);
     }
     .iframe {
-        border-top: 0.5px solid black;
         &.display-none {
             display: none;
         }
@@ -322,6 +322,7 @@ section {
             height: calc(100vh - 7rem);
         }
         .iframe, .iframe iframe  {
+            border-left: 0.5px solid black;
             margin: 0;
             max-width: calc(50vw);
             height: calc(50vw);

@@ -1,5 +1,5 @@
 import { marketId, contractId, networkId } from './near';
-import { ORIGINAL_PATH } from '../utils/history'
+import { ORIGINAL_PATH } from '../utils/history';
 
 const DELIMETER = '||';
 const SERIES_DELIMETER = ':';
@@ -27,9 +27,9 @@ const singleBatchCall = async (view, method = 'GET', first = false) => {
 	}
 	const headers = {
 		'near-network': networkId,
-	}
+	};
 	if (first) {
-		headers['max-age'] = '0'
+		headers['max-age'] = '0';
 	}
 	return (await fetch(url, {
 		headers: new Headers(headers),
@@ -346,7 +346,7 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 
 	// const cachedSeriesNames = useSeriesCache ? Object.keys(seriesCache) : [];
 	const series_names = series.map(({ series_name }) => series_name);
-	const token_series_names = tokens.map(({ token_id }) => id2series(token_id))
+	const token_series_names = tokens.map(({ token_id }) => id2series(token_id));
 	const sales_names = tokens.map(({ token_id }) => contractId + DELIMETER + token_id)
 		.concat(series_names.map((series_name) => contractId + DELIMETER + series_name));
 
@@ -392,25 +392,25 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 		}, 'POST')
 	]);
 
-	sales = sales.filter((s) => !!s)
+	sales = sales.filter((s) => !!s);
 
 	tokens.forEach((t, i) => {
-		const { token_id } = t
-		t.sale = sales.find((s) => s.token_id === token_id)
+		const { token_id } = t;
+		t.sale = sales.find((s) => s.token_id === token_id);
 		const series_name = t.series_name = id2series(token_id);
 		t.series = tokenSeries.find((s) => s.series_name === series_name);
-		addCompatFields(t)
+		addCompatFields(t);
 	});
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i];
-		s.sale = sales.find(({ token_id }) => s.series_name === token_id)
-		addCompatFields(s)
+		s.sale = sales.find(({ token_id }) => s.series_name === token_id);
+		addCompatFields(s);
 	});
 	// add cached series we removed from series_names arg to batch calls
 	// series.push(...Object.values(seriesCache));
 
-	const collection = [...tokens, ...series]
+	const collection = [...tokens, ...series];
 	collection.sort((a, b) => 
 		parseInt(b?.metadata?.issued_at || b?.created_at || '0', 10) -
 		parseInt(a?.metadata?.issued_at || a?.created_at || '0', 10)
@@ -418,7 +418,7 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 
 	update('views', { collection });
 
-	return collection
+	return collection;
 };
 
 //TODO all should get codeId etc...
@@ -450,7 +450,7 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 		token_id,
 	});
 	if (!token) {
-		return false
+		return false;
 	}
 	token.is_token = true;
 	token.series = await loadSeriesName(contractAccount, token.series_args.series_name);
@@ -459,7 +459,7 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 	})];
 	addCompatFields(token);
 	update('views', { token });
-	return token
+	return token;
 };
 
 export const getPackageRange = (from_index = '0', limit = '100') => async ({ getState, update }) => {

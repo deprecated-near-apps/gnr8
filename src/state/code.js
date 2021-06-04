@@ -10,7 +10,7 @@ export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => a
 		update('app', {
 			consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
 		});
-		const output = document.querySelector('.console .output')
+		const output = document.querySelector('.console .output');
 		if (output) {
 			setTimeout(() => output.scrollTop = 999999, 150);
 		}

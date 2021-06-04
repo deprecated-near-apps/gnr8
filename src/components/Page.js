@@ -22,14 +22,14 @@ const TopBar = (item) => {
 	} = item;
 
 	if (!conditions) {
-		conditions = item.sale?.conditions
-		bids = item.sale?.bids
+		conditions = item.sale?.conditions;
+		bids = item.sale?.bids;
 	}
-	if (!account) return null
+	if (!account) return null;
 
 	if (is_series) {
-		if (!conditions) return null
-		if (!claimed) claimed = series.claimed
+		if (!conditions) return null;
+		if (!claimed) claimed = series.claimed;
 		return (
 			<div className="top-bar" onClick={() => history.push('/mint/' + id)}>
 				<div>{params.max_supply - claimed} / {params.max_supply}</div>
@@ -37,10 +37,10 @@ const TopBar = (item) => {
 					<div>{formatNearAmount(conditions.near)} Ⓝ</div>
 				}
 			</div>
-		)
+		);
 	}
 	if (!is_owner) {
-		if (!conditions) return null
+		if (!conditions) return null;
 		return (
 			<div className="top-bar" onClick={() => dispatch(makeOffer(account, item, conditions.near))}>
 				<div>{conditions.near !== '0' ? 'Buy' : 'Make a Bid'}</div>
@@ -53,7 +53,7 @@ const TopBar = (item) => {
 						<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
 				}
 			</div>
-		)
+		);
 	}
 	if (bids?.near && acceptOffer) {
 		return (
@@ -61,16 +61,16 @@ const TopBar = (item) => {
 				<div>Accept Offer</div>
 				<div>{bids.near.owner_id} {formatNearAmount(bids.near.price)} Ⓝ</div>
 			</div>
-		)
+		);
 	}
-	if (!conditions) return null
+	if (!conditions) return null;
 	return (
 		<div className="top-bar">
 			<div>You are selling</div>
 			<div>{conditions.near !== '0' ? <>{formatNearAmount(conditions.near)} Ⓝ</> : 'Open for Bids'}</div>
 		</div>
-	)
-}
+	);
+};
 
 const Item = (item) => {
 
@@ -108,7 +108,7 @@ const Item = (item) => {
 		conditions = item.sale.conditions;
 	}
 
-	const is_owner = account?.accountId === owner_id
+	const is_owner = account?.accountId === owner_id;
 
 	return (
 		<div key={id} className="iframe">
@@ -121,13 +121,13 @@ const Item = (item) => {
 						onClick={async () => {
 							const { mobile } = share(await getShareUrl({
 								nft: { contractId, tokenId: id }
-							}))
+							}));
 							if (!mobile) {
 								dispatch(setDialog({
 									msg: `Link Copied to Clipboard (Control-C)`,
 									choices: ['Ok'],
 									noClose: true,
-								}))
+								}));
 							}
 						}}
 					>&#128279;</div>

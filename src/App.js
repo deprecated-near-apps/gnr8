@@ -46,11 +46,11 @@ const App = () => {
 		'Market ᐊ': () => history.push('/'),
 		'Series ᐊ': () => history.push('/series'),
 		'Gallery ᐊ': () => history.push('/gallery'),
-	}
+	};
 
 	if (account) {
-		options['Collection ᐊ'] = () => history.push('/collection')
-		options['Create ᐊ'] = () => history.push('/create')
+		options['Collection ᐊ'] = () => history.push('/collection');
+		options['Create ᐊ'] = () => history.push('/create');
 	}
 
 	return <>

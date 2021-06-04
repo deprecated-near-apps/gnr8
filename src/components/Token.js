@@ -20,13 +20,13 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	const mount = async() => {
 		if (pathParts[2] && pathParts[2].length) {
-			const result = await dispatch(getToken(pathParts[2]))
+			const result = await dispatch(getToken(pathParts[2]));
 			if (!result) {
 				// might have been a series, redirect to mint series
-				history.push('/mint/' + pathParts[2])
+				history.push('/mint/' + pathParts[2]);
 			}
 		};
-	}
+	};
 	useEffect(mount, []);
 
 	useEffect(() => {
@@ -133,14 +133,14 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 		let price = '0';
 		if (choice === 'Price') {
-			const userPrice = await dispatch(getPrice('Sell Your Token'))
+			const userPrice = await dispatch(getPrice('Sell Your Token'));
 			price = parseNearAmount(userPrice);
 		}
 
 		// should cover new sale (storage) + accountId approvals up to 255 bytes in length
-		let attachedDeposit = new BN(parseNearAmount('0.00255'))
+		let attachedDeposit = new BN(parseNearAmount('0.00255'));
 		if (num_sales.mul(storagePerSale).gte(storage)) {
-			attachedDeposit = attachedDeposit.add(storagePerSale)
+			attachedDeposit = attachedDeposit.add(storagePerSale);
 		}
 
 		await account.functionCall({

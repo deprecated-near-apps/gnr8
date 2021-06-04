@@ -33,13 +33,13 @@ export const useHistory = (callback, hash = false) => {
 };
 
 export const pathAndArgs = () => {
-	let path = window.location.href
+	let path = window.location.href;
 	let args;
 	if (path.indexOf('#/') > -1) {
 		args = url2args(path);
 		path = path.split('#/')[1].split('?')[0];
 	} else {
-		args = url2args(path)
+		args = url2args(path);
 		path = window.location.pathname;
 	}
 	if (ORIGINAL_PATH.length > 1) {

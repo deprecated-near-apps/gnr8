@@ -17,7 +17,7 @@ export const Collection = ({ dispatch, views, account, near }) => {
 	const items = collection;
 
 	const mount = async () => {
-		const items = await dispatch(loadCollection(account.accountId))
+		const items = await dispatch(loadCollection(account.accountId));
 		if (!items.length) {
 			return setLoading({
 				title: 'No Tokens',
