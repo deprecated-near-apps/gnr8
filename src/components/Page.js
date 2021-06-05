@@ -31,7 +31,7 @@ const TopBar = (item) => {
 		if (!conditions) return null;
 		if (!claimed) claimed = series.claimed;
 		return (
-			<div className="top-bar" onClick={() => history.push('/mint/' + id)}>
+			<div className="top-bar" onClick={() => history.push('/mint/' + id + '/')}>
 				<div>{params.max_supply - claimed} / {params.max_supply}</div>
 				{claimed < params.max_supply &&
 					<div>{formatNearAmount(conditions.near)} Ⓝ</div>
@@ -134,7 +134,7 @@ const Item = (item) => {
 
 					{ menu !== 'onlyTop' && <div
 						className="bottom-bar"
-						onClick={() => is_series ? history.push('/mint/' + id) : history.push('/token/' + id)}
+						onClick={() => is_series ? history.push('/mint/' + id + '/') : history.push('/token/' + id + '/')}
 					>
 						<div>{id}</div>
 						<div>{owner_id}</div>

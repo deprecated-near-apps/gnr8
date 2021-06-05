@@ -10,7 +10,7 @@ import { Params } from './Params';
 
 const PENDING_IMAGE_UPLOAD = '__PENDING_IMAGE_UPLOAD__';
 
-export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
+export const Token = ({ app, path, views, update, dispatch, account }) => {
 
 	const { image } = app;
 	const { token, storagePerSale } = views;
@@ -18,12 +18,14 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 
 	const [state, setState] = useState({ args: {}, owner: {} });
 
+	const tokenId = decodeURIComponent(path.matchAll(/\/token\/(.+)/gi).next()?.value[1]);
+
 	const mount = async() => {
-		if (pathParts[2] && pathParts[2].length) {
-			const result = await dispatch(getToken(pathParts[2]));
+		if (tokenId) {
+			const result = await dispatch(getToken(tokenId));
 			if (!result) {
 				// might have been a series, redirect to mint series
-				history.push('/mint/' + pathParts[2]);
+				history.push('/mint/' + tokenId);
 			}
 		};
 	};

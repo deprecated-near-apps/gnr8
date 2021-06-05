@@ -99,7 +99,7 @@ const App = () => {
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }
 			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
-			{ path.substr(0, 6) === '/token' && <Token {...{ app, pathParts, views, update, dispatch, account }} /> }
+			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }
 		</section>
 
 	</>;

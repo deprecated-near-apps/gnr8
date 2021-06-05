@@ -17,11 +17,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 	const [state, setState] = useState({ args: {} });
 
-	const seriesName = path.matchAll(/\/mint\/(.+)/gi).next()?.value[1];
+	const seriesName = decodeURIComponent(path.matchAll(/\/mint\/(.+)/gi).next()?.value[1]);
 
 	useEffect(() => {
 		dispatch(loadMint(seriesName));
 		checkPendingImageUpload();
+		return () => {
+			document.querySelector('iframe').src = ''
+		}
 	}, []);
 
 	const checkPendingImageUpload = async () => {
@@ -47,7 +50,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 	const handleImage = async () => {
 		if (!image) return;
-		
+
 		// stash image in localStorage
 		set(PENDING_IMAGE_UPLOAD + account.accountId, { image: ab2str(image) });
 		//mint token
