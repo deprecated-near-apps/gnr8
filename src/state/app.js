@@ -91,10 +91,6 @@ export const getFrameMedia = (id) => async ({ update, getState, dispatch }) => {
 };
 
 export const uploadMedia = async ({account, image, token}) => {
-	// const sample = document.createElement('img')
-	// sample.src = URL.createObjectURL(new Blob([new Uint8Array(image)]));
-	// document.body.appendChild(sample)
-
 	const { token_id: tokenId } = token;
 	const params = JSON.stringify({
 		// title: tokenId,

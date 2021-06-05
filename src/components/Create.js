@@ -139,8 +139,15 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			]
 		}));
 		if (!result) return;
-		const [series_name, price] = result;
-		if (!series_name.length || !/^\d+$/.test(price) || parseInt(price) === NaN) {
+		let [series_name, price] = result;
+		series_name = series_name.trim()
+		if (!series_name.length || series_name.length > 255 || /[\s|^%#*@`+=?:;'"\{\}\[\]<>\/\\]/g.test(series_name)) {
+			return dispatch(setDialog({
+				msg: 'Invalid Series Name. No special characters like: |^%#*@`+=?:;\'". Only "-" and "_".',
+				info: true
+			}));
+		}
+		if (!/^\d+$/.test(price) || parseInt(price) === NaN) {
 			return dispatch(setDialog({
 				msg: 'Enter a Series Name and Price in NEAR',
 				info: true

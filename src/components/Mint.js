@@ -50,10 +50,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 
 	const handleImage = async () => {
 		if (!image) return;
-
-		// stash image in localStorage
 		set(PENDING_IMAGE_UPLOAD + account.accountId, { image: ab2str(image) });
-		//mint token
+
+		/// debugging image rendering from canvas
+		// const image2 = str2ab(get(PENDING_IMAGE_UPLOAD + account.accountId).image);
+		// const sample = document.createElement('img')
+		// sample.src = URL.createObjectURL(new Blob([new Uint8Array(image2)]));
+		// document.body.appendChild(sample)
+
 		try {
 			const { series } = item;
 			const { args } = state;

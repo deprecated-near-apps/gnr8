@@ -57,26 +57,31 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 
 	const handleImage = async () => {
 		if (!image) return;
-		// stash image in localStorage
 		set(PENDING_IMAGE_UPLOAD + account.accountId, { image: ab2str(image) });
+		try {
+			const { token_id, src } = token;
+			const { args: newArgs } = state;
+			const { params: { owner } } = getParams(src);
+	
+			const args = {};
+			Object.entries(owner).forEach(([name, value], i) => args[name] = newArgs[name] || series_args.owner[i] || value.default);
+			
+			account.functionCall({
+				contractId,
+				methodName: 'update_token_owner_args',
+				args: {
+					token_id,
+					owner_args: Object.values(args),
+				},
+				gas: GAS,
+				attachedDeposit: parseNearAmount('0.1')
+			});
+		} catch (e) {
+			console.warn(e);
+			del(PENDING_IMAGE_UPLOAD + account.accountId);
+			return alert(e);
+		}
 		
-		const { token_id, src } = token;
-		const { args: newArgs } = state;
-		const { params: { owner } } = getParams(src);
-
-		const args = {};
-		Object.entries(owner).forEach(([name, value], i) => args[name] = newArgs[name] || series_args.owner[i] || value.default);
-		
-		account.functionCall({
-			contractId,
-			methodName: 'update_token_owner_args',
-			args: {
-				token_id,
-				owner_args: Object.values(args),
-			},
-			gas: GAS,
-			attachedDeposit: parseNearAmount('0.1')
-		});
 	};
 	useEffect(handleImage, [image]);
 
