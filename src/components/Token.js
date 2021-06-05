@@ -89,7 +89,7 @@ export const Token = ({ app, pathParts, views, update, dispatch, account }) => {
 		const newArgs = { ...args, [name]: value };
 		setState({ ...state, args: newArgs });
 		let newCode = token.src;
-		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{${k}}}`), v));
+		Object.entries(newArgs).forEach(([k, v]) => newCode = newCode.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), v));
 		const { owner_id, num_transfers } = token;
 		dispatch(loadCodeFromSrc({
 			id: token.id, src: newCode, owner_id, num_transfers
