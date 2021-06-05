@@ -24,9 +24,11 @@ import { p51 } from '../../test/examples/p5-1';
 import { p52 } from '../../test/examples/p5-2';
 import { p53 } from '../../test/examples/p5-3';
 import { p54 } from '../../test/examples/p5-4';
+import { p55 } from '../../test/examples/p5-5';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	p55,
 	p54,
 	p53,
 	p52,
@@ -86,7 +88,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (target) => {
 		editor = target;
-		onChange(p52.src, true);
+		onChange(p55.src, true);
 	};
 
 	const onChange = async (newValue, showPreview = false) => {
