@@ -22,9 +22,13 @@ import { three2 } from '../../test/examples/three-2';
 import { three3 } from '../../test/examples/three-3';
 import { p51 } from '../../test/examples/p5-1';
 import { p52 } from '../../test/examples/p5-2';
+import { p53 } from '../../test/examples/p5-3';
+import { p54 } from '../../test/examples/p5-4';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	p54,
+	p53,
 	p52,
 	p51,
 	reglExample,
@@ -140,7 +144,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}));
 		if (!result) return;
 		let [series_name, price] = result;
-		series_name = series_name.trim()
+		series_name = series_name.trim().toLowerCase()
 		if (!series_name.length || series_name.length > 255 || /[\s|^%#*@`+=?:;'"\{\}\[\]<>\/\\]/g.test(series_name)) {
 			return dispatch(setDialog({
 				msg: 'Invalid Series Name. No special characters like: |^%#*@`+=?:;\'". Only "-" and "_".',

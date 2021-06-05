@@ -225,14 +225,17 @@ section {
     margin: auto;
     width: 100vw;
     > div {
+        width: 100%;
         label {
             margin-left: 1rem;
         }
-        > span {
-            margin-right: 1rem;
-        }
         input {
             width: 50%;
+        }
+        label, input {
+            line-height: 2rem;
+            height: 2rem;
+            vertical-align: middle;
         }
     }
     margin-bottom: 32px;

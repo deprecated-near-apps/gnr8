@@ -110,29 +110,6 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 		const num_sales = new BN(await account.viewFunction(marketId, 'get_supply_by_owner_id', { account_id: account.accountId }));
 		const storage = new BN(await account.viewFunction(marketId, 'storage_paid', { account_id: account.accountId }));
 
-		// if (num_sales.mul(storagePerSale).gte(storage)) {
-		// 	const result = await dispatch(setDialog({
-		// 		msg: 'Must deposit NEAR into Marketplace to list sales. You will be redirected after this and then you can put your token up for sale.',
-		// 		input: [
-		// 			{placeholder: 'Number of sales to deposit for?', type: 'number'},
-		// 		]
-		// 	}));
-		// 	if (!result) return;
-		// 	const [mul] = result;
-		// 	if (!/^\d+$/.test(mul) || parseInt(mul) === NaN) {
-		// 		return dispatch(setDialog({
-		// 			msg: 'Not a valid number. Try again!',
-		// 			info: true
-		// 		}));
-		// 	}
-		// 	return await account.functionCall({
-		// 		contractId: marketId,
-		// 		methodName: 'storage_deposit',
-		// 		gas: GAS,
-		// 		attachedDeposit: storagePerSale.mul(new BN(mul)).toString()
-		// 	});
-		// }
-
 		const choice = await dispatch(setDialog({
 			msg: 'Sell Your Token',
 			choices: ['Price', 'Accept Bids']
@@ -183,13 +160,12 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 		});
 	};
 
-
 	if (!token) return null;
 
 	const params = [];
 	const { args, owner } = state;
 	if (owner) {
-		Object.entries(owner).forEach(([name, { default: init, type }]) => params.push({ name, init, type }));
+		Object.entries(owner).forEach(([name, { default: init, type, min, max }]) => params.push({ name, init, type, min, max }));
 	}
 	
 	const argVals = Object.values(state.args);
