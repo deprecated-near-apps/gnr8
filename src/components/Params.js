@@ -20,12 +20,14 @@ export const Params = ({ params, args, updateArgs }) => {
 		}
 		const isSlider = max !== Number.MAX_SAFE_INTEGER
 
+		console.log(value)
+
 		switch (type) {
 
 			case 'int':
 				return <div key={name}>
 					{
-						!isSlider
+						isSlider
 							?
 							<>
 								<input type="range" step="1" min={min} max={max} defaultValue={parseInt(value, 10)} onChange={(e) => updateArgs(name, e.target.value)} />

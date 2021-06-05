@@ -119,7 +119,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		Object.entries(getParams(item.series.src).params.mint).forEach(([k, v]) => {
 			params.push({
 				name: k,
-				default: v.default,
+				init: v.default,
 				type: v.type
 			});
 		});
