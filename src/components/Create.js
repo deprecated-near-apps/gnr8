@@ -25,9 +25,13 @@ import { p52 } from '../../test/examples/p5-2';
 import { p53 } from '../../test/examples/p5-3';
 import { p54 } from '../../test/examples/p5-4';
 import { p55 } from '../../test/examples/p5-5';
+import { p56 } from '../../test/examples/p5-6';
+import { three4 } from '../../test/examples/three-4';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	three4,
+	p56,
 	p55,
 	p54,
 	p53,
@@ -39,6 +43,8 @@ const examples = [
 	three2,
 	three3,
 ];
+
+const defaultExample = three4
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 
@@ -88,7 +94,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (target) => {
 		editor = target;
-		onChange(p55.src, true);
+		onChange(defaultExample.src, true);
 	};
 
 	const onChange = async (newValue, showPreview = false) => {

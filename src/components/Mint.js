@@ -23,9 +23,18 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		dispatch(loadMint(seriesName));
 		checkPendingImageUpload();
 		return () => {
-			document.querySelector('iframe').src = ''
+			const iframe = document.querySelector('iframe')
+			if (iframe) iframe.src = ''
 		}
 	}, []);
+
+	useEffect(() => {
+		if (!item) return
+		const { params: { mint } } = getParams(item.src);
+		const args = {};
+		Object.entries(mint).forEach(([key, val], i) => args[key] = JSON.stringify(val.default));
+		setState({ ...state, args });
+	}, [item]);
 
 	const checkPendingImageUpload = async () => {
 		const { accountId: account_id } = account;
@@ -69,14 +78,15 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			if (series.params.mint.length && !mint.length) {
 				throw 'Choose some values to make this unique';
 			}
-			const tokens = await dispatch(getTokensForSeries(series.series_name));
-			const exists = tokens.some(({ series_args }) => {
-				// console.log(JSON.stringify(series_args.mint.sort()), JSON.stringify(mint.sort()))
-				return series_args.mint.length && 
-				(JSON.stringify(series_args.mint.sort()) === JSON.stringify(mint.sort()));
-			});
-			if (exists) {
-				throw 'A token with these values exists, try another combination';
+			if (series.params.enforce_unique_mint_args) {
+				const tokens = await dispatch(getTokensForSeries(series.series_name));
+				const exists = tokens.some(({ series_args }) => {
+					return series_args.mint.length && 
+					(JSON.stringify(series_args.mint) === JSON.stringify(mint));
+				});
+				if (exists) {
+					throw 'A token with these values exists, try another combination';
+				}
 			}
 			account.functionCall(marketId, 'offer', {
 				nft_contract_id: contractId,

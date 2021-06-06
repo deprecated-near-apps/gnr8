@@ -4,6 +4,7 @@ import { contractId } from './near';
 const paramLabels = ['mint', 'owner'];
 
 export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => async ({ getState, update }) => {
+
 	const { contractAccount } = getState();
 	const log = (msg) => {
 		const { app: { consoleLog } } = getState();

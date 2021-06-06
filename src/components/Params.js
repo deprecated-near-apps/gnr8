@@ -20,8 +20,6 @@ export const Params = ({ params, args, updateArgs }) => {
 		}
 		const isSlider = max !== Number.MAX_SAFE_INTEGER
 
-		console.log(value)
-
 		switch (type) {
 
 			case 'int':
