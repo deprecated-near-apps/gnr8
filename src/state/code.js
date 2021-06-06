@@ -3,29 +3,53 @@ import { contractId } from './near';
 
 const paramLabels = ['mint', 'owner'];
 
-export const loadCodeFromSrc = ({ id, src, args, owner_id, num_transfers }) => async ({ getState, update }) => {
+let replaceFrame = {}
+let log
 
+window.onmessage = ({ data }) => {
+	const { type, msg, id, image } = data;
+	if (image) {
+		if (replaceFrame[id]) {
+			const iframe = document.getElementById(id);
+			const sample = document.createElement('img')
+			sample.src = URL.createObjectURL(new Blob([new Uint8Array(image)]));
+			iframe.parentNode.replaceChild(sample, iframe)
+			sample.onclick = () => history.push((id.indexOf(':') === -1 ? '/mint/' : '/token/') + id + '/')
+			delete replaceFrame[id]
+			return
+		}
+		update('app', { image });
+	}
+	if (/log|warn|error/g.test(type)) {
+		window.console[type](msg);
+		log(type + ': ' + msg);
+	}
+	if (/stop/g.test(type)) {
+		console.log('stopping', id)
+		replaceFrame[id] = true
+		const iframe = document.getElementById(id);
+		iframe.contentWindow.postMessage({ type: 'image' }, '*');
+	}
+};
+
+export const loadCodeFromSrc = ({
+	id, src, args, owner_id, num_transfers, editor
+}) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
-	const log = (msg) => {
-		const { app: { consoleLog } } = getState();
-		update('app', {
-			consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
-		});
-		const output = document.querySelector('.console .output');
-		if (output) {
-			setTimeout(() => output.scrollTop = 999999, 150);
-		}
-	};
-	window.onmessage = ({ data }) => {
-		const { type, msg, byteLength } = data;
-		if (byteLength) {
-			update('app', { image: data });
-		}
-		if (/log|warn|error/g.test(type)) {
-			window.console[type](msg);
-			log(type + ': ' + msg);
-		}
-	};
+	
+	if (editor) {
+		log = (msg) => {
+			const { app: { consoleLog } } = getState();
+			update('app', {
+				consoleLog: consoleLog.slice(consoleLog.length - 99).concat([msg])
+			});
+			const output = document.querySelector('.console .output');
+			if (output) {
+				setTimeout(() => output.scrollTop = 999999, 150);
+			}
+		};
+	}
+
 	const { code, html, css, params, error } = getParams(src);
 	if (error) {
 		return log(error.message);
@@ -79,7 +103,7 @@ export const getParams = (code) => {
 	return { code: code.replace(paramsMatch, ''), html, css, params };
 };
 
-const iframeTemplate = `
+const iframeTemplate = (id) => `
     <!doctype html>
     <html lang="en">
     <head>
@@ -95,10 +119,21 @@ const iframeTemplate = `
 				if (data.type === 'image') {
 					document.querySelector('canvas').toBlob(async (blob) => {
 						const image = await blob.arrayBuffer()
-						parent.postMessage(image, '${window.location.origin}', [image]);
+						parent.postMessage({ id: '${id}', image }, '${window.location.origin}', [image]);
 					})
 				}
 			}
+			let strikes = 0
+			let t = Date.now()
+			setInterval(() => {
+				if (Date.now() - t > 1015) {
+					strikes++
+					if (strikes > 4) {
+						parent.postMessage({ id: '${id}', type: 'stop' }, '${window.location.origin}');
+					}
+				}
+				t = Date.now()
+			}, 1000)
 			// console.log('hey')
 			// console.warn('hey')
 			// console.error('hey')
@@ -141,7 +176,7 @@ export const loadCode = async ({
 		return console.warn('element not found', id);
 	}
 
-	el.src = 'data:text/html;charset=utf-8,' + encodeURI(iframeTemplate
+	el.src = 'data:text/html;charset=utf-8,' + encodeURI(iframeTemplate(id)
 		.replace('@css', `${css}`)
 		.replace('@html', `${html}`)
 		.replace('@code', `${code}`)

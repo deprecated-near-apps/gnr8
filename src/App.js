@@ -32,7 +32,7 @@ const App = () => {
 		document.body.scrollTo(0,0);
 		update('app.href', window.location.href);
 	}, true);
-	const { path, pathParts, args } = pathAndArgs();
+	const { path, args } = pathAndArgs();
 
 	const toggleMainMenu = (which) => {
 		update('app.menu', menu === which ? false : which);

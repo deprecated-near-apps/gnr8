@@ -25,7 +25,7 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 			const result = await dispatch(getToken(tokenId));
 			if (!result) {
 				// might have been a series, redirect to mint series
-				history.push('/mint/' + tokenId);
+				history.replace('/mint/' + tokenId);
 			}
 		};
 	};

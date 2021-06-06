@@ -1,5 +1,4 @@
 import React from 'react';
-import BN from 'bn.js';
 import { hexToRgb, rgbToHex } from '../utils/color';
 
 export const Params = ({ params, args, updateArgs }) => {

@@ -84,7 +84,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const updateEditorAndPreview = (newValue) => {
 		if (!newValue) return;
 		dispatch(loadCodeFromSrc({
-			id: 'create-preview', src: newValue || code,
+			id: 'create-preview', src: newValue || code, editor: true
 		}));
 		setTimeout(() => {
 			editor.resize();

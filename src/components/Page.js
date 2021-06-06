@@ -154,7 +154,7 @@ export const Frame = ({
 	makeOffer, acceptOffer,
 }) => items.map((item) => <Item {...{ account, key: item.id, ...item, dispatch, menu, makeOffer, acceptOffer}} />);
 
-const NUM_PER_PAGE_DEFAULT = 4;
+const NUM_PER_PAGE_DEFAULT = 6;
 
 export const Page = ({
 	dispatch,
