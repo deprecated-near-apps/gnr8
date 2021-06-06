@@ -314,7 +314,7 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 		account_id
 	});
 
-	const [tokens, series] = await Promise.all([
+	let [tokens, series] = await Promise.all([
 		singleBatchCall({
 			contract: contractId,
 			method: 'nft_tokens_for_owner',
@@ -399,13 +399,16 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 
 	sales = sales.filter((s) => !!s);
 
-	tokens.forEach((t, i) => {
-		const { token_id } = t;
-		t.sale = sales.find((s) => s.token_id === token_id);
-		const series_name = t.series_name = id2series(token_id);
-		t.series = tokenSeries.find((s) => s.series_name === series_name);
-		addCompatFields(t);
-	});
+	tokens = tokens
+		.filter(({ token_id }) => !CORRUPTED_TOKEN_IDS.includes(token_id))
+		.map((t, i) => {
+			const { token_id } = t;
+			t.sale = sales.find((s) => s.token_id === token_id);
+			const series_name = t.series_name = id2series(token_id);
+			t.series = tokenSeries.find((s) => s.series_name === series_name);
+			addCompatFields(t);
+			return t
+		});
 
 	series.forEach((s, i) => {
 		s.claimed = seriesClaimed[i];
