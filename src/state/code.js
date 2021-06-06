@@ -5,6 +5,7 @@ const paramLabels = ['mint', 'owner'];
 
 let replaceFrame = {}
 let log
+let updateState
 
 window.onmessage = ({ data }) => {
 	const { type, msg, id, image } = data;
@@ -18,7 +19,7 @@ window.onmessage = ({ data }) => {
 			delete replaceFrame[id]
 			return
 		}
-		update('app', { image });
+		updateState('app', { image });
 	}
 	if (/log|warn|error/g.test(type)) {
 		window.console[type](msg);
@@ -37,6 +38,7 @@ export const loadCodeFromSrc = ({
 }) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	
+	updateState = update
 	if (editor) {
 		log = (msg) => {
 			const { app: { consoleLog } } = getState();
