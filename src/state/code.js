@@ -6,6 +6,7 @@ const paramLabels = ['mint', 'owner'];
 let replaceFrame = {};
 let log;
 let updateState;
+let iframeHelperTimeout;
 
 export const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html';
 export const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write';
@@ -141,15 +142,70 @@ export const loadCode = async ({
 	// newFrame.id = id
 	// newFrame.setAttribute('allow', IFRAME_ALLOW)
 	iframe.onload = () => {
-		iframe.contentWindow.postMessage({ type: 'id', msg: id }, '*');
-		if (editor) iframe.contentWindow.postMessage({ type: 'editor' }, '*');
-		if (page) iframe.contentWindow.postMessage({ type: 'page' }, '*');
 		const msg = html + 
 			`<style>${css}</style>` +
 			packages.map((p) => `<script src="${p}"></script>`).join('') + 
-			`<script>${code}</script>`;
+			`<script>${code}</script>` +
+			iframeHelpers;
 		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');
+		if (iframeHelperTimeout) clearTimeout(iframeHelperTimeout)
+		iframeHelperTimeout = setTimeout(() => {
+			iframe.contentWindow.postMessage({ type: 'id', msg: id }, '*');
+			if (editor) iframe.contentWindow.postMessage({ type: 'editor' }, '*');
+			if (page) iframe.contentWindow.postMessage({ type: 'page' }, '*');
+		}, 250)
 	};
 	iframe.src = IFRAME_SRC;
 	// iframe.parentNode.replaceChild(newFrame, iframe);
 };
+
+const iframeHelpers = `
+<script>
+	let id;
+	window.onmessage = (e) => {
+		const origin = document.location.ancestorOrigins[0]
+		const { data } = e
+		switch (data.type) {
+			case 'id':
+				id = data.msg
+				break;
+			case 'image':
+				document.querySelector('canvas').toBlob(async (blob) => {
+					const image = await blob.arrayBuffer()
+					parent.postMessage({ id, image }, origin, [image]);
+				})
+				break;
+			case 'editor':
+				['log', 'warn', 'error'].forEach((type) => {
+					const prev = {
+						[type]: window.console[type]
+					}
+					window.console[type] = (...msg) => {
+						prev[type](...msg);
+						try {
+							parent.postMessage({ msg, type }, origin);
+						} catch (e) { }
+					}
+				})
+				// console.log('hey')
+				// console.warn('hey')
+				// console.error('hey')
+				break;
+			case 'page':
+				let strikes = 0
+				let t = Date.now()
+				setInterval(() => {
+					if (Date.now() - t > 1015) {
+						strikes++
+						if (strikes > 4) {
+							parent.postMessage({ id, type: 'stop' }, origin);
+						}
+					}
+					t = Date.now()
+				}, 1000)
+				break;
+		}
+	}
+</script>
+`
+

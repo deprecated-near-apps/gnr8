@@ -7,7 +7,7 @@ exports.p57 = {
     max_supply: '100',
     mint: {
         backgroundColor: {
-            default: [255, 223, 200],
+            default: [255, 255, 255],
             type: 'color-arr',
         },
         clearSpeed: {
@@ -78,7 +78,7 @@ function setup() {
     fft.setInput(mic);
 }
 function draw() {
-    background(255, clearSpeed);
+    background(...backgroundColor, clearSpeed);
     if (!clicked) {
         textAlign(CENTER, CENTER);
         text('click me', width/2, height/2)
