@@ -2,69 +2,13 @@
 <html lang="en">
 <head>
     <script>
-        let id;
-
-        window.onmessage = (e) => {
-
-            const origin = document.location.ancestorOrigins[0]
-
-            const { data } = e
-                console.log(data)
-
-            switch (data.type) {
-
-                /// code insertion
-
-
-                case 'write':
-                    document.open();
-                    document.write(data.msg);
-                    document.close();
-                    break;
-
-                /// frame logistics
-
-                case 'id':
-                    id = data.msg
-                    break;
-                case 'image':
-                    document.querySelector('canvas').toBlob(async (blob) => {
-                        const image = await blob.arrayBuffer()
-                        parent.postMessage({ id, image }, origin, [image]);
-                    })
-                    break;
-                case 'editor':
-                    ['log', 'warn', 'error'].forEach((type) => {
-                        const prev = {
-                            [type]: window.console[type]
-                        }
-                        window.console[type] = (...msg) => {
-                            prev[type](...msg);
-                            try {
-                                parent.postMessage({ msg, type }, origin);
-                            } catch (e) { }
-                        }
-                    })
-                    // console.log('hey')
-                    // console.warn('hey')
-                    // console.error('hey')
-                    break;
-                case 'page':
-                    let strikes = 0
-                    let t = Date.now()
-                    setInterval(() => {
-                        if (Date.now() - t > 1015) {
-                            strikes++
-                            if (strikes > 4) {
-                                parent.postMessage({ id, type: 'stop' }, origin);
-                            }
-                        }
-                        t = Date.now()
-                    }, 1000)
-                    break;
+        window.onmessage = ({ data }) => {
+            if (data.type === 'write') {
+                document.open();
+                document.write(data.msg);
+                document.close();
             }
         }
-
     </script>
 </head>
 <body>
