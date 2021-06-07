@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import BN from 'bn.js';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { get, set, del, ab2str, str2ab } from '../utils/storage';
 import { loadCodeFromSrc, getParams } from '../state/code';
 import { loadMint, getTokensForSeries } from '../state/views';
-import { getFrameMedia, uploadMedia, getMediaUrl } from '../state/app';
+import { setDialog, getFrameMedia, uploadMedia, getMediaUrl } from '../state/app';
 import { Menu } from './Menu';
 import { Params } from './Params';
 import { Frame } from './Page';
@@ -73,6 +74,9 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			if (series.claimed === series.params.max_supply) {
 				throw 'None left of this series';
 			}
+			if (!item?.conditions?.near) {
+				throw 'Not for sale';
+			}
 			const mint = Object.values(args);
 			const owner = Object.values(getParams(series.src).params.owner).map((p) => JSON.stringify(p.default));
 			if (series.params.mint.length && !mint.length) {
@@ -88,6 +92,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 					throw 'A token with these values exists, try another combination';
 				}
 			}
+
 			account.functionCall(marketId, 'offer', {
 				nft_contract_id: contractId,
 				token_id: series.series_name,
@@ -98,11 +103,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 					receiver_id: account.accountId,
 					media: getMediaUrl(contractId)
 				})
-			}, GAS, parseNearAmount('1.1'));
+			}, GAS, new BN(parseNearAmount('0.1')).add(new BN(item.conditions.near)));
 		} catch (e) {
 			console.warn(e);
 			del(PENDING_IMAGE_UPLOAD + account.accountId);
-			return alert(e);
+			return dispatch(setDialog({
+				msg: e,
+				info: true
+			}));
 		}
 	};
 	useEffect(handleImage, [image]);
