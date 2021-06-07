@@ -1,8 +1,8 @@
 
 
 exports.p56 = {
-    series_name: 'Flocking',
-    src: `
+	series_name: 'Flocking',
+	src: `
 @params
 {
     packages: ['p5@1.3.1'],
@@ -319,7 +319,7 @@ Boid.prototype.cohesion = function (boids) {
     
 
 `
-}
+};
 
 
 

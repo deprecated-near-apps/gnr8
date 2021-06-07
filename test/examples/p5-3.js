@@ -1,8 +1,8 @@
 
 
 exports.p53 = {
-    series_name: 'Processing Particles',
-    src: `
+	series_name: 'Processing Particles',
+	src: `
 @params
 {
     packages: ['p5@1.3.1'],
@@ -110,5 +110,5 @@ ParticleSystem.prototype.run = function () {
 @js
 
 `
-}
+};
 

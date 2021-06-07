@@ -1,8 +1,8 @@
 
 
 exports.p55 = {
-    series_name: 'Spirograph',
-    src: `
+	series_name: 'Spirograph',
+	src: `
 @params
 {
     packages: ['p5@1.3.1'],
@@ -160,7 +160,7 @@ function mouseClicked() {
 @js
 
 `
-}
+};
 
 
 

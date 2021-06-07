@@ -1,8 +1,8 @@
 
 
 exports.p54 = {
-    series_name: 'L System',
-    src: `
+	series_name: 'L System',
+	src: `
 @params
 {
     packages: ['p5@1.3.1'],
@@ -183,7 +183,7 @@ function drawIt(k) {
 }
 @js
 `
-}
+};
 
 
 

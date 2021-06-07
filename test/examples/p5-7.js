@@ -1,4 +1,8 @@
 
+
+exports.p57 = {
+	series_name: 'Processing Audio',
+	src: `
 @params
 {
     packages: ["p5-cf@1.3.1","p5.sound@1.3.1"],
@@ -60,29 +64,31 @@
 let mic, fft;
 
 function setup() {
-  createCanvas(710, 400);
-  noFill();
+    createCanvas(710, 400);
+    noFill();
 
-  mic = new p5.AudioIn();
-  mic.start();
-  fft = new p5.FFT();
-  fft.setInput(mic);
+    mic = new p5.AudioIn();
+    mic.start();
+    fft = new p5.FFT();
+    fft.setInput(mic);
 }
 
 function draw() {
-  background(200);
+    background(200);
 
-  let spectrum = fft.analyze();
+    let spectrum = fft.analyze();
 
-  beginShape();
-  for (i = 0; i < spectrum.length; i++) {
-    vertex(i, map(spectrum[i], 0, 255, height, 0));
-  }
-  endShape();
+    beginShape();
+    for (i = 0; i < spectrum.length; i++) {
+        vertex(i, map(spectrum[i], 0, 255, height, 0));
+    }
+    endShape();
 }
 @js
 
 
+`
+};
 
 
 
@@ -112,5 +118,4 @@ function draw() {
 
 
 
-    
 

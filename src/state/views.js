@@ -7,7 +7,7 @@ const HELPER_URL = 'https://helper.nearapi.org/';
 const BATCH_URL = HELPER_URL + 'v1/batch/';
 const SHARE_URL = HELPER_URL + 'v1/share/';
 
-const CORRUPTED_TOKEN_IDS = ['flock:1', 'flock:2', 'flock:3']
+const CORRUPTED_TOKEN_IDS = ['flock:1', 'flock:2', 'flock:3'];
 
 // TODO cache series and tokens already seen
 const seriesCache = {};
@@ -217,8 +217,8 @@ export const loadGallery = () => async ({ getState, update, dispatch }) => {
 			token.series = series.find((s) => s.series_name === series_name);
 			token.id = token_id;
 			token.src = token.series.src;
-			return token
-		})
+			return token;
+		});
 
 	update('views', { gallery: tokens });
 };
@@ -407,7 +407,7 @@ export const loadCollection = (account_id) => async ({ getState, update, dispatc
 			const series_name = t.series_name = id2series(token_id);
 			t.series = tokenSeries.find((s) => s.series_name === series_name);
 			addCompatFields(t);
-			return t
+			return t;
 		});
 
 	series.forEach((s, i) => {

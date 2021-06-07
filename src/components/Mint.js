@@ -23,13 +23,13 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		dispatch(loadMint(seriesName));
 		checkPendingImageUpload();
 		return () => {
-			const iframe = document.querySelector('iframe')
-			if (iframe) iframe.src = ''
-		}
+			const iframe = document.querySelector('iframe');
+			if (iframe) iframe.src = '';
+		};
 	}, []);
 
 	useEffect(() => {
-		if (!item) return
+		if (!item) return;
 		const { params: { mint } } = getParams(item.src);
 		const args = {};
 		Object.entries(mint).forEach(([key, val], i) => args[key] = JSON.stringify(val.default));

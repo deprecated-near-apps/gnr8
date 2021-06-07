@@ -1,6 +1,6 @@
 exports.three4 = {
-    series_name: 'Perlin Volume',
-    src: `
+	series_name: 'Perlin Volume',
+	src: `
 @params
 {
 	packages: ["three.js@r128"],
@@ -322,7 +322,7 @@ function animate() {
 @js
 	
 `
-}
+};
 
 
 

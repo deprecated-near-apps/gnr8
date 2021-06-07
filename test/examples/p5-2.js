@@ -1,7 +1,7 @@
 
 exports.p52 = {
-    series_name: 'Processing 3D',
-    src: `
+	series_name: 'Processing 3D',
+	src: `
 @params
 {
     packages: ['p5@1.3.1'],

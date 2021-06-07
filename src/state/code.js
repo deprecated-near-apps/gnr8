@@ -3,12 +3,12 @@ import { contractId } from './near';
 
 const paramLabels = ['mint', 'owner'];
 
-let replaceFrame = {}
-let log
-let updateState
+let replaceFrame = {};
+let log;
+let updateState;
 
-const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html'
-const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write'
+const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html';
+const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write';
 // main window listener for iframe messages (all frame)
 
 window.onmessage = ({ data }) => {
@@ -16,12 +16,12 @@ window.onmessage = ({ data }) => {
 	if (image) {
 		if (replaceFrame[id]) {
 			const iframe = document.getElementById(id);
-			const sample = document.createElement('img')
+			const sample = document.createElement('img');
 			sample.src = URL.createObjectURL(new Blob([new Uint8Array(image)]));
-			iframe.parentNode.replaceChild(sample, iframe)
-			sample.onclick = () => history.push((id.indexOf(':') === -1 ? '/mint/' : '/token/') + id + '/')
-			delete replaceFrame[id]
-			return
+			iframe.parentNode.replaceChild(sample, iframe);
+			sample.onclick = () => history.push((id.indexOf(':') === -1 ? '/mint/' : '/token/') + id + '/');
+			delete replaceFrame[id];
+			return;
 		}
 		updateState('app', { image });
 	}
@@ -29,8 +29,8 @@ window.onmessage = ({ data }) => {
 		log(type + ': ' + msg.join(','));
 	}
 	if (/stop/g.test(type)) {
-		console.log('stopping', id)
-		replaceFrame[id] = true
+		console.log('stopping', id);
+		replaceFrame[id] = true;
 		const iframe = document.getElementById(id);
 		iframe.contentWindow.postMessage({ type: 'image' }, '*');
 	}
@@ -41,7 +41,7 @@ export const loadCodeFromSrc = ({
 }) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	
-	updateState = update
+	updateState = update;
 	if (editor) {
 		log = (msg) => {
 			const { app: { consoleLog } } = getState();
@@ -119,7 +119,7 @@ export const loadCode = async ({
 		// console.log(k)
 		// const re = new RegExp(`{{\\s\*${k}\\s\*}}`, 'g')
 		// console.log(re.test(code))
-		code = code.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default))
+		code = code.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default));
 	}));
 
 	code = code.replace(/{{\s*OWNER_ID\s*}}/g, `'${owner_id}'`);
@@ -147,9 +147,9 @@ export const loadCode = async ({
 		const msg = html + 
 			`<style>${css}</style>` +
 			packages.map((p) => `<script src="${p}"></script>`).join('') + 
-			`<script>${code}</script>`
+			`<script>${code}</script>`;
 		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');
-	}
-	iframe.src = IFRAME_SRC
+	};
+	iframe.src = IFRAME_SRC;
 	// iframe.parentNode.replaceChild(newFrame, iframe);
 };

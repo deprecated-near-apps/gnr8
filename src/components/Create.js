@@ -43,12 +43,12 @@ const examples = [
 	three3,
 ];
 
-const defaultExample = three4
+const defaultExample = three4;
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 const EDITOR_CHANGES = '__PENDING_SERIES_UPDATE__';
 
-const DEBOUNCE_TIME = 750
+const DEBOUNCE_TIME = 750;
 
 let changeTimeout, editor;
 
@@ -85,7 +85,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const updateEditorAndPreview = (newValue) => {
 		if (!newValue) return;
-		set(EDITOR_CHANGES, { code: newValue })
+		set(EDITOR_CHANGES, { code: newValue });
 		dispatch(loadCodeFromSrc({
 			id: 'create-preview', src: newValue || code, editor: true
 		}));
@@ -97,7 +97,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (target) => {
 		editor = target;
-		const { code } = get(EDITOR_CHANGES)
+		const { code } = get(EDITOR_CHANGES);
 		if (code) {
 			onChange(code, true);
 		} else {
@@ -160,7 +160,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		}));
 		if (!result) return;
 		let [series_name, price] = result;
-		series_name = series_name.trim().toLowerCase()
+		series_name = series_name.trim().toLowerCase();
 		if (!series_name.length || series_name.length > 255 || /[\s|^%#*@`+=?:;'"\{\}\[\]<>\/\\]/g.test(series_name)) {
 			return dispatch(setDialog({
 				msg: 'Invalid Series Name. No special characters like: |^%#*@`+=?:;\'". Only "-" and "_".',
