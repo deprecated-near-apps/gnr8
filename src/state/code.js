@@ -148,12 +148,12 @@ export const loadCode = async ({
 			`<script>${code}</script>` +
 			iframeHelpers;
 		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');
-		if (iframeHelperTimeout) clearTimeout(iframeHelperTimeout)
+		if (iframeHelperTimeout) clearTimeout(iframeHelperTimeout);
 		iframeHelperTimeout = setTimeout(() => {
 			iframe.contentWindow.postMessage({ type: 'id', msg: id }, '*');
 			if (editor) iframe.contentWindow.postMessage({ type: 'editor' }, '*');
 			if (page) iframe.contentWindow.postMessage({ type: 'page' }, '*');
-		}, 250)
+		}, 250);
 	};
 	iframe.src = IFRAME_SRC;
 	// iframe.parentNode.replaceChild(newFrame, iframe);
@@ -207,5 +207,5 @@ const iframeHelpers = `
 		}
 	}
 </script>
-`
+`;
 
