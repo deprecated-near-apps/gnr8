@@ -26,10 +26,12 @@ import { p54 } from '../../test/examples/p5-4';
 import { p55 } from '../../test/examples/p5-5';
 import { p56 } from '../../test/examples/p5-6';
 import { p57 } from '../../test/examples/p5-7';
+import { p58 } from '../../test/examples/p5-8';
 import { three4 } from '../../test/examples/three-4';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	p58,
 	p57,
 	three4,
 	p56,

@@ -144,6 +144,8 @@ export const loadCode = async ({
 		const msg = html + 
 			`<style>${css}</style>` +
 			packages.map((p) => `<script src="${p}"></script>`).join('') + 
+			`<script src="https://cdn.jsdelivr.net/gh/nearprotocol/near-api-js/dist/near-api-js.js"></script>` +
+			`<script type="module" src="./wasm-music/wasm-music.js"></script>` +
 			`<script>${code}</script>` +
 			iframeHelpers;
 		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');

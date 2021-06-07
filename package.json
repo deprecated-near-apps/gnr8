@@ -43,7 +43,7 @@
         "start:deploy": "yarn patch:deploy-config && cross-env REACT_APP_ENV=dev parcel src/index.html --open",
         "fix": "eslint src/ test/ --fix",
         "test:unit": "(cd contracts && cargo test -- --nocapture --color always)",
-        "static": "mkdir dist && cp src/frame.html dist/frame.html",
+        "static": "mkdir dist && cp src/frame.html dist/frame.html && cp -r src/wasm-music dist/wasm-music",
         "prebuild": "rm -rf ./dist && yarn static",
         "build": "cross-env REACT_APP_ENV=dev REACT_APP_API_HELPER=true parcel build src/index.html --no-source-maps --public-url https://near-apps.github.io/gnr8/",
         "build:local": "cross-env REACT_APP_ENV=dev REACT_APP_API_HELPER=true parcel build src/index.html --no-source-maps",
