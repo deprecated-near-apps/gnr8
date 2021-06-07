@@ -7,6 +7,10 @@ let replaceFrame = {}
 let log
 let updateState
 
+const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html'
+const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write'
+// main window listener for iframe messages (all frame)
+
 window.onmessage = ({ data }) => {
 	const { type, msg, id, image } = data;
 	if (image) {
@@ -22,8 +26,7 @@ window.onmessage = ({ data }) => {
 		updateState('app', { image });
 	}
 	if (/log|warn|error/g.test(type)) {
-		window.console[type](msg);
-		log(type + ': ' + msg);
+		log(type + ': ' + msg.join(','));
 	}
 	if (/stop/g.test(type)) {
 		console.log('stopping', id)
@@ -34,7 +37,7 @@ window.onmessage = ({ data }) => {
 };
 
 export const loadCodeFromSrc = ({
-	id, src, args, owner_id, num_transfers, editor
+	id, src, args, page, owner_id, num_transfers, editor
 }) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	
@@ -65,7 +68,7 @@ export const loadCodeFromSrc = ({
 			});
 		});
 	}
-	loadCode({ id, contractAccount, owner_id, num_transfers, params, code, html, css });
+	loadCode({ id, contractAccount, page, editor, owner_id, num_transfers, params, code, html, css });
 };
 
 export const getParams = (code) => {
@@ -105,52 +108,9 @@ export const getParams = (code) => {
 	return { code: code.replace(paramsMatch, ''), html, css, params };
 };
 
-const iframeTemplate = (id) => `
-    <!doctype html>
-    <html lang="en">
-    <head>
-		@packages
-		<style>@css</style>
-        <script>
-			['log', 'warn', 'error'].forEach((type) => {
-				window.console[type] = (msg) => {
-					parent.postMessage({ msg, type }, '${window.location.origin}');
-				}
-			})
-			window.onmessage = ({data}) => {
-				if (data.type === 'image') {
-					document.querySelector('canvas').toBlob(async (blob) => {
-						const image = await blob.arrayBuffer()
-						parent.postMessage({ id: '${id}', image }, '${window.location.origin}', [image]);
-					})
-				}
-			}
-			let strikes = 0
-			let t = Date.now()
-			setInterval(() => {
-				if (Date.now() - t > 1015) {
-					strikes++
-					if (strikes > 4) {
-						parent.postMessage({ id: '${id}', type: 'stop' }, '${window.location.origin}');
-					}
-				}
-				t = Date.now()
-			}, 1000)
-			// console.log('hey')
-			// console.warn('hey')
-			// console.error('hey')
-		</script>
-	</head>
-    <body>
-		@html
-        <script>@code</script>
-    </body>
-    </html>
-`;
-
 const packageCache = {};
 export const loadCode = async ({
-	id, contractAccount, params, code, html = '', css = '',
+	id, contractAccount, page, editor, params, code, html = '', css = '',
 	owner_id = 'account.near',
 	num_transfers = 0
 }) => {
@@ -173,15 +133,24 @@ export const loadCode = async ({
 		return url;
 	}));
 
-	const el = document.getElementById(id);
-	if (!el) {
-		return console.warn('element not found', id);
+	const iframe = document.getElementById(id);
+	if (!iframe) {
+		return console.warn('iframe not found', id);
 	}
-
-	el.src = 'data:text/html;charset=utf-8,' + encodeURI(iframeTemplate(id)
-		.replace('@css', `${css}`)
-		.replace('@html', `${html}`)
-		.replace('@code', `${code}`)
-		.replace('@packages', packages.map((src) => `<script src="${src}"></script>`)
-		));
+	const newFrame = document.createElement('iframe')
+	newFrame.id = id
+	newFrame.setAttribute('allow', IFRAME_ALLOW)
+	newFrame.onload = () => {
+		newFrame.contentWindow.postMessage({ type: 'id', msg: id }, '*');
+		if (editor) newFrame.contentWindow.postMessage({ type: 'editor' }, '*');
+		if (page) newFrame.contentWindow.postMessage({ type: 'page' }, '*');
+		const msg = html + 
+			`<style>${css}</style>` +
+			packages.map((p) => `<script src="${p}"></script>`).join('') + 
+			`<script>${code}</script>`
+		console.log(msg)
+		newFrame.contentWindow.postMessage({ type: 'write', msg }, '*');
+	}
+	newFrame.src = IFRAME_SRC
+	iframe.parentNode.replaceChild(newFrame, iframe);
 };

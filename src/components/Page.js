@@ -6,6 +6,7 @@ import { share } from '../utils/mobile';
 import { setDialog } from '../state/app';
 import { formatNearAmount } from '../utils/near-utils';
 
+
 const TopBar = (item) => {
 
 	let {
@@ -76,6 +77,7 @@ const Item = (item) => {
 
 	let {
 		account,
+		page,
 		id, src,
 		owner_id, is_sale, is_series, is_token,
 		conditions,
@@ -90,7 +92,7 @@ const Item = (item) => {
 
 	useEffect(() => {
 		dispatch(loadCodeFromSrc({
-			id, src, args, owner_id, num_transfers
+			id, src, args, page, owner_id, num_transfers
 		}));
 	}, []);
 
@@ -112,7 +114,9 @@ const Item = (item) => {
 
 	return (
 		<div key={id} className="iframe">
-			<iframe {...{ id }} />
+			<iframe {...{
+				id,
+			}} />
 			{
 				menu && <>
 					<TopBar {...{...item, dispatch, is_owner, params, conditions, }} />
@@ -150,9 +154,10 @@ export const Frame = ({
 	dispatch,
 	account,
 	items,
+	page = false,
 	menu = true,
 	makeOffer, acceptOffer,
-}) => items.map((item) => <Item {...{ account, key: item.id, ...item, dispatch, menu, makeOffer, acceptOffer}} />);
+}) => items.map((item) => <Item {...{ account, key: item.id, ...item, page, dispatch, menu, makeOffer, acceptOffer}} />);
 
 const NUM_PER_PAGE_DEFAULT = 6;
 
@@ -176,7 +181,7 @@ export const Page = ({
 			<div style={{ visibility: nextVisibility }} onClick={() => setPage(page + 1)}>Next</div>
 		</div>
 		<div className="gallery">
-			<Frame {...{ account, dispatch, items, menu, makeOffer, acceptOffer }} />
+			<Frame {...{ account, dispatch, items, page: true, menu, makeOffer, acceptOffer }} />
 		</div>
 		<div className="pagination bottom">
 			<div style={{ visibility: prevVisibility }} onClick={() => setPage(page - 1)}>Prev</div>

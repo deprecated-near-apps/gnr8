@@ -16,7 +16,6 @@ import { sha256 } from 'js-sha256';
 
 import { Menu } from './Menu';
 import { reglExample } from '../../test/examples/regl-example';
-import { reglExample2 } from '../../test/examples/regl-example-2';
 import { three1 } from '../../test/examples/three-1';
 import { three2 } from '../../test/examples/three-2';
 import { three3 } from '../../test/examples/three-3';
@@ -47,6 +46,9 @@ const examples = [
 const defaultExample = three4
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
+const EDITOR_CHANGES = '__PENDING_SERIES_UPDATE__';
+
+const DEBOUNCE_TIME = 500
 
 let changeTimeout, editor;
 
@@ -83,6 +85,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const updateEditorAndPreview = (newValue) => {
 		if (!newValue) return;
+		set(EDITOR_CHANGES, { code: newValue })
 		dispatch(loadCodeFromSrc({
 			id: 'create-preview', src: newValue || code, editor: true
 		}));
@@ -94,7 +97,12 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const onLoad = (target) => {
 		editor = target;
-		onChange(defaultExample.src, true);
+		const { code } = get(EDITOR_CHANGES)
+		if (code) {
+			onChange(code, true);
+		} else {
+			onChange(defaultExample.src, true);
+		}
 	};
 
 	const onChange = async (newValue, showPreview = false) => {
@@ -103,7 +111,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		if (changeTimeout) {
 			clearTimeout(changeTimeout);
 		}
-		setTimeout(() => updateEditorAndPreview(newValue), 500);
+		setTimeout(() => updateEditorAndPreview(newValue), DEBOUNCE_TIME);
 	};
 
 	const includePackage = (i) => {
