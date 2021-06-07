@@ -170,7 +170,12 @@ export const Page = ({
 	makeOffer, acceptOffer,
 	numPerPage = NUM_PER_PAGE_DEFAULT,
 }) => {
-	const [page, setPage] = useState(0);
+	const [page, setPageNum] = useState(0);
+
+	const setPage = (num) => {
+		setPageNum(num)
+		setTimeout(() => document.body.scrollTop = 0, 10)
+	}
 
 	const prevVisibility = page > 0 ? 'visible' : 'hidden';
 	const nextVisibility = (page + 1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden';
