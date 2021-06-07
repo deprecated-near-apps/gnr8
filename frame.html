@@ -2,56 +2,27 @@
 <html lang="en">
 <head>
     <script>
-        let id, numPackages, loaded = 0;
+        let id;
 
         window.onmessage = (e) => {
 
             const origin = document.location.ancestorOrigins[0]
 
             const { data } = e
+                console.log(data)
 
             switch (data.type) {
 
                 /// code insertion
 
-                case 'html':
-                    const body = document.querySelector('body')
-                    body.innerHTML = data.msg
-                    break;
-                case 'css':
-                    const style = document.createElement('style');
-                    style.textContent = data.msg
-                    document.getElementsByTagName('head')[0].appendChild(style);
-                    break;
-                case 'packages':
-                numPackages = data.msg.length
-                    data.msg.forEach((src, i) => {
-                        setTimeout(() => {
-                            const script = document.createElement('script')
-                            script.onload = () => {
-                                loaded++;
-                                if (loaded === numPackages) {
-                                    try {
-                                        deferredLoad()
-                                    } catch(e) {}
-                                }
-                            }
-                            script.src = src
-                            document.body.appendChild(script)
-                        }, 150 * i)
-                    })
-                    break;
-                case 'code':
-                    let code = data.msg
-                    const script = document.createElement('script')
-                    if (!/setup|onload/g.test(code)) {
-                        code = `window.deferredLoad = () => {${code}}`
-                    }
-                    script.textContent = code
-                    document.body.appendChild(script)
+
+                case 'write':
+                    document.open();
+                    document.write(data.msg);
+                    document.close();
                     break;
 
-                    /// frame logistics
+                /// frame logistics
 
                 case 'id':
                     id = data.msg
