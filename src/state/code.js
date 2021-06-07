@@ -175,10 +175,15 @@ const iframeHelpers = `
 				id = data.msg
 				break;
 			case 'image':
-				document.querySelector('canvas').toBlob(async (blob) => {
-					const image = await blob.arrayBuffer()
-					parent.postMessage({ id, image }, origin, [image]);
-				})
+				const canvas = document.querySelector('canvas')
+				if (canvas) {
+					return document.querySelector('canvas').toBlob(async (blob) => {
+						const image = await blob.arrayBuffer()
+						parent.postMessage({ id, image }, origin, [image]);
+					})
+				}
+				const image = new ArrayBuffer()
+				parent.postMessage({ id, image }, origin, [image]);
 				break;
 			case 'editor':
 				['log', 'warn', 'error'].forEach((type) => {
