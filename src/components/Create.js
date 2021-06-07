@@ -48,7 +48,7 @@ const defaultExample = three4
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 const EDITOR_CHANGES = '__PENDING_SERIES_UPDATE__';
 
-const DEBOUNCE_TIME = 500
+const DEBOUNCE_TIME = 750
 
 let changeTimeout, editor;
 
@@ -111,7 +111,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 		if (changeTimeout) {
 			clearTimeout(changeTimeout);
 		}
-		setTimeout(() => updateEditorAndPreview(newValue), DEBOUNCE_TIME);
+		changeTimeout = setTimeout(() => updateEditorAndPreview(newValue), DEBOUNCE_TIME);
 	};
 
 	const includePackage = (i) => {

@@ -137,20 +137,19 @@ export const loadCode = async ({
 	if (!iframe) {
 		return console.warn('iframe not found', id);
 	}
-	const newFrame = document.createElement('iframe')
-	newFrame.id = id
-	newFrame.setAttribute('allow', IFRAME_ALLOW)
-	newFrame.onload = () => {
-		newFrame.contentWindow.postMessage({ type: 'id', msg: id }, '*');
-		if (editor) newFrame.contentWindow.postMessage({ type: 'editor' }, '*');
-		if (page) newFrame.contentWindow.postMessage({ type: 'page' }, '*');
+	// const newFrame = document.createElement('iframe')
+	// newFrame.id = id
+	// newFrame.setAttribute('allow', IFRAME_ALLOW)
+	iframe.onload = () => {
+		iframe.contentWindow.postMessage({ type: 'id', msg: id }, '*');
+		if (editor) iframe.contentWindow.postMessage({ type: 'editor' }, '*');
+		if (page) iframe.contentWindow.postMessage({ type: 'page' }, '*');
 		const msg = html + 
 			`<style>${css}</style>` +
 			packages.map((p) => `<script src="${p}"></script>`).join('') + 
 			`<script>${code}</script>`
-		console.log(msg)
-		newFrame.contentWindow.postMessage({ type: 'write', msg }, '*');
+		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');
 	}
-	newFrame.src = IFRAME_SRC
-	iframe.parentNode.replaceChild(newFrame, iframe);
+	iframe.src = IFRAME_SRC
+	// iframe.parentNode.replaceChild(newFrame, iframe);
 };
