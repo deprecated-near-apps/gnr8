@@ -25,19 +25,20 @@
                     break;
                 case 'packages':
                 numPackages = data.msg.length
-                    data.msg.forEach((src) => {
-                        const script = document.createElement('script')
-                        script.setAttribute('defer', 'true')
-                        script.onload = () => {
-                            loaded++;
-                            if (loaded === numPackages) {
-                                try {
-                                    deferredLoad()
-                                } catch(e) {}
+                    data.msg.forEach((src, i) => {
+                        setTimeout(() => {
+                            const script = document.createElement('script')
+                            script.onload = () => {
+                                loaded++;
+                                if (loaded === numPackages) {
+                                    try {
+                                        deferredLoad()
+                                    } catch(e) {}
+                                }
                             }
-                        }
-                        script.src = src
-                        document.body.appendChild(script)
+                            script.src = src
+                            document.body.appendChild(script)
+                        }, 150 * i)
                     })
                     break;
                 case 'code':
