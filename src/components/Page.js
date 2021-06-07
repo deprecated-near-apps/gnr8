@@ -34,8 +34,10 @@ const TopBar = (item) => {
 		return (
 			<div className="top-bar" onClick={() => history.push('/mint/' + id + '/')}>
 				<div>{params.max_supply - claimed} / {params.max_supply}</div>
-				{claimed < params.max_supply &&
+				{claimed < params.max_supply ?
 					<div>{formatNearAmount(conditions.near)} Ⓝ</div>
+					:
+					<div>Sold Out</div>
 				}
 			</div>
 		);
