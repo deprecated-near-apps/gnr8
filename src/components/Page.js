@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { loadCodeFromSrc } from '../state/code';
+import { loadCodeFromSrc, IFRAME_ALLOW } from '../state/code';
 import { contractId } from '../state/near';
 import { getShareUrl } from '../state/views';
 import { share } from '../utils/mobile';
@@ -116,6 +116,7 @@ const Item = (item) => {
 		<div key={id} className="iframe">
 			<iframe {...{
 				id,
+				allow: IFRAME_ALLOW,
 			}} />
 			{
 				menu && <>

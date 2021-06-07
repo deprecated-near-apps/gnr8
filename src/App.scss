@@ -184,7 +184,9 @@ body {
 .menu.no-barcode {
     font-family: 'Overpass Mono', monospace;
     font-size: 1rem;
-    text-decoration: underline;
+    span {
+        text-decoration: underline;
+    }
 }
 
 section {

@@ -182,11 +182,11 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 							style={{ visibility: isChanged ? 'visible' : 'hidden' }}
 							onClick={() => handleUpdate()}
 						>
-						Update
+							<span>Update</span>
 						</div>
 						:
 						<div onClick={() => history.push('/')}>
-						Back
+							<span>Back</span>
 						</div>
 				}
 				{isOwner && <>

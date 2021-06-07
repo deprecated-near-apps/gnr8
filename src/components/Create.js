@@ -10,7 +10,7 @@ import "ace-builds/src-min-noconflict/ext-language_tools";
 import { getPackageRange } from '../state/views';
 import { GAS, contractId, marketId, parseNearAmount } from '../state/near';
 import { setDialog } from '../state/app';
-import { loadCodeFromSrc, getParams } from '../state/code';
+import { loadCodeFromSrc, getParams, IFRAME_ALLOW } from '../state/code';
 
 import { sha256 } from 'js-sha256';
 
@@ -25,10 +25,12 @@ import { p53 } from '../../test/examples/p5-3';
 import { p54 } from '../../test/examples/p5-4';
 import { p55 } from '../../test/examples/p5-5';
 import { p56 } from '../../test/examples/p5-6';
+import { p57 } from '../../test/examples/p5-7';
 import { three4 } from '../../test/examples/three-4';
 import { pixi } from '../../test/examples/pixi';
 
 const examples = [
+	p57,
 	three4,
 	p56,
 	p55,
@@ -43,7 +45,7 @@ const examples = [
 	three3,
 ];
 
-const defaultExample = three4;
+const defaultExample = p57;
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 const EDITOR_CHANGES = '__PENDING_SERIES_UPDATE__';
@@ -98,7 +100,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const onLoad = (target) => {
 		editor = target;
 		const { code } = get(EDITOR_CHANGES);
-		if (code) {
+		if (false && code) {
 			onChange(code, true);
 		} else {
 			onChange(defaultExample.src, true);
@@ -252,8 +254,15 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 		<div className="menu no-barcode">
 			<div className="bar">
-				<div onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</div>
-				<div onClick={() => handleCreateSeries()}>Create</div>
+				<div>
+					<span onClick={() => update('app.createMenu', createMenu === 'left' ? false : 'left')}>Options</span>
+					&nbsp;
+					<span onClick={() => {
+						setShowExamples(!createMenu);
+						update('app.createMenu', createMenu === 'left' ? false : 'left');
+					}}>Examples</span>
+				</div>
+				<div onClick={() => handleCreateSeries()}><span>Create</span></div>
 			</div>
 			{
 				createMenu === 'left' && <div className="sub below">
@@ -290,6 +299,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 			<div className={preview ? 'iframe' : 'iframe display-none'}>
 				<iframe {...{
 					id: 'create-preview',
+					allow: IFRAME_ALLOW,
 				}} />
 			</div>
 		</div>

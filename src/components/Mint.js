@@ -181,8 +181,8 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		<div className="mint">
 			<div className="menu no-barcode">
 				<div className="bar">
-					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}>About</div>
-					<div onClick={() => handleOffer()}>Mint</div>
+					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}><span>About</span></div>
+					<div onClick={() => handleOffer()}><span>Mint</span></div>
 				</div>
 				{
 					mintMenu === 'left' && <div className="sub below">
