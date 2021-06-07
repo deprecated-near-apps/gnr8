@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <script>
+        let id, numPackages, loaded = 0;
+
+        window.onmessage = (e) => {
+
+            const origin = document.location.ancestorOrigins[0]
+
+            const { data } = e
+
+            switch (data.type) {
+
+                /// code insertion
+
+                case 'html':
+                    const body = document.querySelector('body')
+                    body.innerHTML = data.msg
+                    break;
+                case 'css':
+                    const style = document.createElement('style');
+                    style.textContent = data.msg
+                    document.getElementsByTagName('head')[0].appendChild(style);
+                    break;
+                case 'packages':
+                numPackages = data.msg.length
+                    data.msg.forEach((src) => {
+                        const script = document.createElement('script')
+                        script.setAttribute('defer', 'true')
+                        script.onload = () => {
+                            loaded++;
+                            if (loaded === numPackages) {
+                                try {
+                                    deferredLoad()
+                                } catch(e) {}
+                            }
+                        }
+                        script.src = src
+                        document.body.appendChild(script)
+                    })
+                    break;
+                case 'code':
+                    let code = data.msg
+                    const script = document.createElement('script')
+                    if (!/setup|onload/g.test(code)) {
+                        code = `window.deferredLoad = () => {${code}}`
+                    }
+                    script.textContent = code
+                    document.body.appendChild(script)
+                    break;
+
+                    /// frame logistics
+
+                case 'id':
+                    id = data.msg
+                    break;
+                case 'image':
+                    document.querySelector('canvas').toBlob(async (blob) => {
+                        const image = await blob.arrayBuffer()
+                        parent.postMessage({ id, image }, origin, [image]);
+                    })
+                    break;
+                case 'editor':
+                    ['log', 'warn', 'error'].forEach((type) => {
+                        const prev = {
+                            [type]: window.console[type]
+                        }
+                        window.console[type] = (...msg) => {
+                            prev[type](...msg);
+                            try {
+                                parent.postMessage({ msg, type }, origin);
+                            } catch (e) { }
+                        }
+                    })
+                    // console.log('hey')
+                    // console.warn('hey')
+                    // console.error('hey')
+                    break;
+                case 'page':
+                    let strikes = 0
+                    let t = Date.now()
+                    setInterval(() => {
+                        if (Date.now() - t > 1015) {
+                            strikes++
+                            if (strikes > 4) {
+                                parent.postMessage({ id, type: 'stop' }, origin);
+                            }
+                        }
+                        t = Date.now()
+                    }, 1000)
+                    break;
+            }
+        }
+
+    </script>
+</head>
+<body>
+</body>
+</html>
