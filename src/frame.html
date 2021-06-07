@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
     <script>
+        ['alert', 'prompt', 'confirm'].forEach((type) => {
+            window[type] = (...msg) => {
+                console.log(...msg)
+            }
+        })
         window.onmessage = ({ data }) => {
             if (data.type === 'write') {
                 document.open();

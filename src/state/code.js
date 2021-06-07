@@ -125,7 +125,7 @@ export const loadCode = async ({
 
 	code = code.replace(/{{\s*OWNER_ID\s*}}/g, `'${owner_id}'`);
 	code = code.replace(/{{\s*NUM_TRANSFERS\s*}}/g, num_transfers);
-	const packages = await Promise.all(params.packages.map(async (name_version) => {
+	const packages = await Promise.all(params.packages.filter(p => p.length).map(async (name_version) => {
 		if (packageCache[name_version]) {
 			return packageCache[name_version];
 		}
@@ -162,6 +162,11 @@ export const loadCode = async ({
 const iframeHelpers = `
 <script>
 	let id;
+	['alert', 'prompt', 'confirm'].forEach((type) => {
+		window[type] = (...msg) => {
+			console.log(...msg)
+		}
+	})
 	window.onmessage = (e) => {
 		const origin = document.location.ancestorOrigins[0]
 		const { data } = e
