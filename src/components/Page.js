@@ -175,9 +175,9 @@ export const Page = ({
 	const [page, setPageNum] = useState(0);
 
 	const setPage = (num) => {
-		setPageNum(num)
-		setTimeout(() => document.body.scrollTop = 0, 10)
-	}
+		setPageNum(num);
+		setTimeout(() => document.body.scrollTop = 0, 10);
+	};
 
 	const prevVisibility = page > 0 ? 'visible' : 'hidden';
 	const nextVisibility = (page + 1) < Math.ceil(items.length / numPerPage) ? 'visible' : 'hidden';

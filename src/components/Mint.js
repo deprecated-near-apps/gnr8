@@ -38,7 +38,7 @@ export const Mint = ({ app, path, views, update, dispatch, account, wallet }) =>
 	}, [item]);
 
 	const checkPendingImageUpload = async () => {
-		if (!account) return
+		if (!account) return;
 		const { accountId: account_id } = account;
 		const data = get(PENDING_IMAGE_UPLOAD + account.accountId);
 		if (data && data.image && data.image.length) {

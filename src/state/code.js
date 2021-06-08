@@ -7,7 +7,7 @@ let replaceFrame = {};
 let log;
 let updateState;
 let iframeHelperTimeout;
-export const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : localIframeSrc
+export const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : localIframeSrc;
 export const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write';
 
 // main window listener for iframe messages (all frame)
