@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <script>
+        ['alert', 'prompt', 'confirm'].forEach((type) => {
+            window[type] = (...msg) => {
+                console.log(...msg)
+            }
+        })
+        window.onmessage = ({ data }) => {
+            if (data.type === 'write') {
+                document.open();
+                document.write(data.msg);
+                document.close();
+            }
+        }
+    </script>
+</head>
+<body>
+</body>
+</html>
