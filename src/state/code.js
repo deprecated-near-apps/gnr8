@@ -107,8 +107,6 @@ export const getParams = (code) => {
 		code = ''
 	}
 
-	console.log(code)
-
 	return { code: code.replace(paramsMatch, ''), html, css, params };
 };
 

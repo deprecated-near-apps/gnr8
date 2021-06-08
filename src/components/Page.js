@@ -31,10 +31,13 @@ const TopBar = (item) => {
 	if (is_series) {
 		if (!conditions) return null;
 		if (!claimed) claimed = series.claimed;
+		claimed = parseInt(claimed, 10);
+		const max_supply = parseInt(params.max_supply, 10);
+
 		return (
 			<div className="top-bar" onClick={() => history.push('/mint/' + id + '/')}>
-				<div>{params.max_supply - claimed} / {params.max_supply}</div>
-				{claimed < params.max_supply ?
+				<div>{max_supply - claimed} / {max_supply}</div>
+				{claimed < max_supply ?
 					<div>{formatNearAmount(conditions.near)} Ⓝ</div>
 					:
 					<div>Sold Out</div>
