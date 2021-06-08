@@ -38,6 +38,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 	}, [item]);
 
 	const checkPendingImageUpload = async () => {
+		if (!account) return
 		const { accountId: account_id } = account;
 		const data = get(PENDING_IMAGE_UPLOAD + account.accountId);
 		if (data && data.image && data.image.length) {
@@ -52,7 +53,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			}))[0];
 			// decode and upload image
 			const image = str2ab(data.image);
-			const response = await uploadMedia({account, image, token});
+			const response = await uploadMedia({ account, image, token });
 			console.log(response);
 			del(PENDING_IMAGE_UPLOAD + account.accountId);
 		}
@@ -85,8 +86,8 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			if (series.params.enforce_unique_mint_args) {
 				const tokens = await dispatch(getTokensForSeries(series.series_name));
 				const exists = tokens.some(({ series_args }) => {
-					return series_args.mint.length && 
-					(JSON.stringify(series_args.mint) === JSON.stringify(mint));
+					return series_args.mint.length &&
+						(JSON.stringify(series_args.mint) === JSON.stringify(mint));
 				});
 				if (exists) {
 					throw 'A token with these values exists, try another combination';
@@ -150,7 +151,7 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 				frag: <>
 					{ item.series.params.mint.length && <>
 						<div>
-							Mint a variant of the series by choosing: { item.series.params.mint.join() }.
+							Mint a variant of the series by choosing: {item.series.params.mint.join()}.
 						</div>
 						{ item.series.params.enforce_unique_mint_args &&
 							<div>
@@ -159,10 +160,10 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 						}
 					</>
 					}
-					
+
 					{ item.series.params.owner.length && <>
 						<div>
-							Once you are an owner, you can update the following: { item.series.params.owner.join() }.
+							Once you are an owner, you can update the following: {item.series.params.owner.join()}.
 						</div>
 						{ item.series.params.enforce_unique_owner_args &&
 							<div>
@@ -189,8 +190,17 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 		<div className="mint">
 			<div className="menu no-barcode">
 				<div className="bar">
-					<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}><span>About</span></div>
-					<div onClick={() => handleOffer()}><span>Mint</span></div>
+					{account
+						?
+						<>
+							<div onClick={() => update('app.mintMenu', mintMenu === 'left' ? false : 'left')}><span>About</span></div>
+							<div onClick={() => handleOffer()}><span>Mint</span></div>
+						</>
+						:
+						<div onClick={() => history.push('/')}>
+							<span>Back</span>
+						</div>
+					}
 				</div>
 				{
 					mintMenu === 'left' && <div className="sub below">
@@ -202,11 +212,11 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 			</div>
 
 			<div className="gallery">
-				<Frame {...{dispatch, items: [item], menu: 'onlyTop' }} />
+				<Frame {...{ dispatch, items: [item], menu: 'onlyTop' }} />
 			</div>
 
 			<div className="mint-params">
-				<Params {...{params, args, updateArgs}} />
+				<Params {...{ params, args, updateArgs }} />
 			</div>
 		</div>
 

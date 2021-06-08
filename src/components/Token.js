@@ -21,7 +21,7 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 	const tokenId = decodeURIComponent(path.matchAll(/\/token\/(.+)/gi).next()?.value[1]);
 
 	const mount = async() => {
-		if (tokenId) {
+		if (tokenId) {	
 			const result = await dispatch(getToken(tokenId));
 			if (!result) {
 				// might have been a series, redirect to mint series

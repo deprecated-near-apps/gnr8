@@ -8,10 +8,11 @@ let log;
 let updateState;
 let iframeHelperTimeout;
 
-export const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html';
+// export const IFRAME_SRC = !/localhost/g.test(window.origin) ? 'https://near-apps.github.io/gnr8/frame.html' : 'http://localhost:5000/frame.html';
+export const IFRAME_SRC = 'https://near-apps.github.io/gnr8/frame.html'
 export const IFRAME_ALLOW = 'accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; clipboard-read; clipboard-write';
-// main window listener for iframe messages (all frame)
 
+// main window listener for iframe messages (all frame)
 window.onmessage = ({ data }) => {
 	const { type, msg, id, image } = data;
 	if (image) {
