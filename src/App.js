@@ -98,8 +98,8 @@ const App = () => {
 			{ path === '/gallery' && <Gallery {...{ dispatch, views, account }} /> }
 			{ path === '/collection' && <Collection {...{ dispatch, views, account, near }} /> }
 			{ path === '/create' && <Create {...{ app, views, update, dispatch, account }} /> }
-			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account }} /> }
-			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account }} /> }
+			{ path.substr(0, 5) === '/mint' && <Mint {...{ app, path, views, update, dispatch, account, wallet }} /> }
+			{ path.substr(0, 6) === '/token' && <Token {...{ app, path, views, update, dispatch, account, wallet }} /> }
 		</section>
 
 	</>;

@@ -11,7 +11,7 @@ import { Frame } from './Page';
 
 const PENDING_IMAGE_UPLOAD = '__PENDING_IMAGE_UPLOAD__';
 
-export const Mint = ({ app, path, views, update, dispatch, account }) => {
+export const Mint = ({ app, path, views, update, dispatch, account, wallet }) => {
 
 	const { mintMenu, image } = app;
 	const { mint: item } = views;
@@ -197,9 +197,14 @@ export const Mint = ({ app, path, views, update, dispatch, account }) => {
 							<div onClick={() => handleOffer()}><span>Mint</span></div>
 						</>
 						:
-						<div onClick={() => history.push('/')}>
-							<span>Back</span>
-						</div>
+						<>
+							<div onClick={() => history.push('/')}>
+								<span>Back</span>
+							</div>
+							<div onClick={() => wallet.signIn()}>
+								<span>Sign In to Mint</span>
+							</div>
+						</>
 					}
 				</div>
 				{

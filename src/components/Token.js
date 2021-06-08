@@ -10,7 +10,7 @@ import { Params } from './Params';
 
 const PENDING_IMAGE_UPLOAD = '__PENDING_IMAGE_UPLOAD__';
 
-export const Token = ({ app, path, views, update, dispatch, account }) => {
+export const Token = ({ app, path, views, dispatch, account, wallet }) => {
 
 	const { image } = app;
 	const { token, storagePerSale } = views;
@@ -185,9 +185,14 @@ export const Token = ({ app, path, views, update, dispatch, account }) => {
 							<span>Update</span>
 						</div>
 						:
-						<div onClick={() => history.push('/')}>
-							<span>Back</span>
-						</div>
+						<>
+							<div onClick={() => history.push('/')}>
+								<span>Back</span>
+							</div>
+							<div onClick={() => wallet.signIn()}>
+								<span>Sign In</span>
+							</div>
+						</>
 				}
 				{isOwner && <>
 					{
