@@ -115,7 +115,7 @@ impl Contract {
         // there's a fixed price user can buy for so process purchase
         // or, with memo user is passing through their deposit
         if deposit == price || msg_is_some {
-            let diff = deposit - price;
+            let diff = deposit.checked_sub(price).expect("Attached deposit for minting is less than price.");
             if msg_is_some {
                 assert!(diff > 0, "Attached deposit must be greater than price (to pay for storage of minted NFT).");
             }

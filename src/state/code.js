@@ -74,7 +74,7 @@ export const loadCodeFromSrc = ({
 export const getParams = (code) => {
 	const paramsMatch = code.match(/@params[^]+@params/g)?.[0]?.split('@params')?.filter((_, i) => i % 2 === 1);
 	if (!paramsMatch) {
-		return alert('Something wrong with @params. Do you have @params at the first and last line of your params?');
+		console.warn('Something wrong with @params. Do you have @params at the first and last line of your params?');
 	}
 	let params;
 	try {
@@ -103,7 +103,11 @@ export const getParams = (code) => {
 	const jsMatch = code.match(/@js[^]+@js/g)?.[0]?.split('@js')?.filter((_, i) => i % 2 === 1);
 	if (jsMatch) {
 		code = jsMatch.join('\n');
+	} else {
+		code = ''
 	}
+
+	console.log(code)
 
 	return { code: code.replace(paramsMatch, ''), html, css, params };
 };
@@ -114,16 +118,17 @@ export const loadCode = async ({
 	owner_id = 'account.near',
 	num_transfers = 0
 }) => {
+	if (code.length) {
+		paramLabels.forEach((label) => Object.entries(params[label]).forEach(([k, v]) => {
+			// console.log(k)
+			// const re = new RegExp(`{{\\s\*${k}\\s\*}}`, 'g')
+			// console.log(re.test(code))
+			code = code.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default));
+		}));
+		code = code.replace(/{{\s*OWNER_ID\s*}}/g, `'${owner_id}'`);
+		code = code.replace(/{{\s*NUM_TRANSFERS\s*}}/g, num_transfers);
+	}
 	
-	paramLabels.forEach((label) => Object.entries(params[label]).forEach(([k, v]) => {
-		// console.log(k)
-		// const re = new RegExp(`{{\\s\*${k}\\s\*}}`, 'g')
-		// console.log(re.test(code))
-		code = code.replace(new RegExp(`{{\\s\*${k}\\s\*}}`, 'g'), typeof v.default === 'string' ? v.default : JSON.stringify(v.default));
-	}));
-
-	code = code.replace(/{{\s*OWNER_ID\s*}}/g, `'${owner_id}'`);
-	code = code.replace(/{{\s*NUM_TRANSFERS\s*}}/g, num_transfers);
 	const packages = await Promise.all(params.packages.filter(p => p.length).map(async (name_version) => {
 		if (packageCache[name_version]) {
 			return packageCache[name_version];
@@ -141,10 +146,11 @@ export const loadCode = async ({
 	// newFrame.id = id
 	// newFrame.setAttribute('allow', IFRAME_ALLOW)
 	iframe.onload = () => {
-		const msg = html + 
-			`<style>${css}</style>` +
+		const msg = 
+			(html.length ? html : '') + 
+			(css.length ? `<style>${css}</style>` : '') +
 			packages.map((p) => `<script src="${p}"></script>`).join('') + 
-			`<script>${code}</script>` +
+			(code.length ? `<script>${code}</script>` : '') +
 			iframeHelpers;
 		iframe.contentWindow.postMessage({ type: 'write', msg }, '*');
 		if (iframeHelperTimeout) clearTimeout(iframeHelperTimeout);

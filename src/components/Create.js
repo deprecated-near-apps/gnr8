@@ -100,7 +100,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	const onLoad = (target) => {
 		editor = target;
 		const { code } = get(EDITOR_CHANGES);
-		if (false && code) {
+		if (code) {
 			onChange(code, true);
 		} else {
 			onChange(defaultExample.src, true);
