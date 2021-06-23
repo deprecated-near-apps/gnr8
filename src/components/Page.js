@@ -134,7 +134,7 @@ const Item = (item) => {
 							}));
 							if (!mobile) {
 								dispatch(setDialog({
-									msg: `Link Copied to Clipboard (Control-C)`,
+									msg: `Link Copied to Clipboard (paste with Control-V)`,
 									choices: ['Ok'],
 									noClose: true,
 								}));

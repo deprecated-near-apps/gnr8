@@ -29,7 +29,7 @@ const App = () => {
 	useEffect(onMount, []);
 	useHistory(() => {
 		toggleMainMenu(false);
-		document.body.scrollTo(0,0);
+		window.scrollTo(0,0);
 		update('app.href', window.location.href);
 	}, true);
 	const { path, args } = pathAndArgs();

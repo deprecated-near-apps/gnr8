@@ -62,6 +62,9 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	const numSales = await contractAccount.viewFunction(marketId, 'get_supply_by_nft_contract_id', {
 		nft_contract_id: contractId
 	});
+	
+	console.log(numSales)
+
 	const sales = await singleBatchCall({
 		contract: marketId,
 		method: 'get_sales_by_nft_contract_id',
@@ -470,7 +473,7 @@ export const getToken = (token_id) => async ({ getState, update }) => {
 	return token;
 };
 
-export const getPackageRange = (from_index = '0', limit = '100') => async ({ getState, update }) => {
+export const getPackageRange = (from_index = '0', limit = 100) => async ({ getState, update }) => {
 	const { contractAccount } = getState();
 	const packages = await contractAccount.viewFunction(contractId, 'get_package_range', {
 		from_index,
@@ -484,7 +487,7 @@ export const getTokensForSeries = (series_name) => async ({ getState, update }) 
 	return await contractAccount.viewFunction(contractId, 'nft_tokens_for_series', {
 		series_name,
 		from_index: '0',
-		limit: '100',
+		limit: 100,
 	});   
 };
 

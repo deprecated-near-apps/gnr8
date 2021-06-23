@@ -34,6 +34,16 @@ async function initContract() {
 const getAccountBalance = async (accountId) => (new nearAPI.Account(connection, accountId)).getAccountBalance();
 const getAccountBytes = async (accountId) => (await (new nearAPI.Account(connection, accountId)).state()).storage_usage;
 
+
+const initAccount = async(accountId, secret) => {
+	account = new nearAPI.Account(connection, accountId);
+	const newKeyPair = KeyPair.fromString(secret);
+	console.log(newKeyPair.publicKey.toString())
+	keyStore.setKey(networkId, accountId, newKeyPair);
+	return account
+}
+
+
 const createOrInitAccount = async(accountId, secret) => {
 	let account;
 	try {
@@ -140,8 +150,10 @@ module.exports = {
 	getAccountBytes,
 	contract,
 	contractName,
+	contractId: contractName,
 	contractMethods,
 	contractAccount,
+	initAccount,
 	createOrInitAccount,
 	createAccessKeyAccount,
 	initContract, getAccount, postSignedJson, postJson,

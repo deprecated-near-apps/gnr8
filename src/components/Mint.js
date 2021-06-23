@@ -49,7 +49,7 @@ export const Mint = ({ app, path, views, update, dispatch, account, wallet }) =>
 			const token = (await account.viewFunction(contractId, 'nft_tokens_for_owner', {
 				account_id,
 				from_index: (parseInt(numTokens, 10) - 1).toString(),
-				limit: '1',
+				limit: 1,
 			}))[0];
 			// decode and upload image
 			const image = str2ab(data.image);

@@ -272,10 +272,10 @@ impl Contract {
             .unwrap_or_else(|| panic!("No series {}", series_name))
     }
 
-    pub fn series_range(&self, from_index: U64, limit: U64) -> Vec<Series> {
+    pub fn series_range(&self, from_index: U64, limit: u64) -> Vec<Series> {
         let keys = self.series_by_name.keys_as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         (start..end)
             .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap())
             .collect()
@@ -304,7 +304,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<Series> {
         let series_per_owner = self.series_per_owner.get(&account_id);
         let series = if let Some(series_per_owner) = series_per_owner {
@@ -314,7 +314,7 @@ impl Contract {
         };
         let keys = series.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         (start..end)
             .map(|i| self.series_by_name.get(&keys.get(i).unwrap()).unwrap())
             .collect()

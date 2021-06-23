@@ -1,7 +1,7 @@
 const fs = require('fs');
 const nearAPI = require('near-api-js');
 const getConfig = require('../src/config');
-const { nodeUrl, networkId, contractName, contractMethods } = getConfig(true);
+const { nodeUrl, networkId, contractName, contractMethods } = getConfig(false);
 const {
 	keyStores: { InMemoryKeyStore },
 	Near, Account, Contract, KeyPair,
@@ -23,6 +23,7 @@ const near = new Near({
 const { connection } = near;
 const contractAccount = new Account(connection, contractName);
 contractAccount.addAccessKey = (publicKey) => contractAccount.addKey(publicKey, contractName, contractMethods.changeMethods, parseNearAmount('0.1'));
+
 const contract = new Contract(contractAccount, contractName, contractMethods);
 
 module.exports = {

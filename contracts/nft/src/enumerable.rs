@@ -6,14 +6,25 @@ impl Contract {
     pub fn nft_tokens(
         &self,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<JsonToken> {
         let mut tmp = vec![];
         let keys = self.tokens_by_id.keys_as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         for i in start..end {
             tmp.push(self.nft_token(keys.get(i).unwrap()).unwrap());
+        }
+        tmp
+    }
+
+    pub fn nft_tokens_batch(
+        &self,
+        token_ids: Vec<String>,
+    ) -> Vec<JsonToken> {
+        let mut tmp = vec![];
+        for i in 0..token_ids.len() {
+            tmp.push(self.nft_token(token_ids[i].clone()).unwrap());
         }
         tmp
     }
@@ -34,7 +45,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<JsonToken> {
         let mut tmp = vec![];
         let tokens_owner = self.tokens_per_owner.get(&account_id);
@@ -45,7 +56,7 @@ impl Contract {
         };
         let keys = tokens.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         for i in start..end {
             tmp.push(self.nft_token(keys.get(i).unwrap()).unwrap());
         }
@@ -70,7 +81,7 @@ impl Contract {
         &self,
         series_name: String,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<JsonToken> {
         let mut tmp = vec![];
         let tokens_per_series = self.tokens_per_series.get(&series_name);
@@ -81,22 +92,9 @@ impl Contract {
         };
         let keys = tokens_per_series.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         for i in start..end {
             tmp.push(self.nft_token(keys.get(i).unwrap()).unwrap());
-        }
-        tmp
-    }
-
-    /// batches
-    
-    pub fn nft_tokens_batch(
-        &self,
-        token_ids: Vec<String>,
-    ) -> Vec<JsonToken> {
-        let mut tmp = vec![];
-        for token_id in token_ids {
-            tmp.push(self.nft_token(token_id).unwrap());
         }
         tmp
     }
@@ -135,7 +133,7 @@ impl Contract {
         &self,
         series_name: String,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<JsonToken> {
         let mut tmp = vec![];
         let tokens_per_package = self.tokens_per_package.get(&series_name);
@@ -146,7 +144,7 @@ impl Contract {
         };
         let keys = tokens_per_package.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         for i in start..end {
             tmp.push(self.nft_token(keys.get(i).unwrap()).unwrap());
         }

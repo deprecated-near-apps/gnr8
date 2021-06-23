@@ -52,7 +52,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<Sale> {
         let mut tmp = vec![];
         let by_owner_id = self.by_owner_id.get(&account_id);
@@ -63,7 +63,7 @@ impl Contract {
         };
         let keys = sales.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), sales.len());
+        let end = min(start + limit, sales.len());
         for i in start..end {
             tmp.push(self.sales.get(&keys.get(i).unwrap()).unwrap());
         }
@@ -86,7 +86,7 @@ impl Contract {
         &self,
         nft_contract_id: AccountId,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<Sale> {
         let mut tmp = vec![];
         let by_nft_contract_id = self.by_nft_contract_id.get(&nft_contract_id);
@@ -97,7 +97,7 @@ impl Contract {
         };
         let keys = sales.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), sales.len());
+        let end = min(start + limit, sales.len());
         for i in start..end {
             tmp.push(self.sales.get(&keys.get(i).unwrap()).unwrap());
         }
@@ -120,7 +120,7 @@ impl Contract {
         &self,
         token_type: String,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<Sale> {
         let mut tmp = vec![];
         let by_nft_token_type = self.by_nft_token_type.get(&token_type);
@@ -131,7 +131,7 @@ impl Contract {
         };
         let keys = sales.as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), sales.len());
+        let end = min(start + limit, sales.len());
         for i in start..end {
             tmp.push(self.sales.get(&keys.get(i).unwrap()).unwrap());
         }

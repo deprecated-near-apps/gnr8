@@ -198,7 +198,10 @@ section {
 }
 
 .create {
-    .editor {
+    .editor-wrap {
+        width: 100%;
+    }
+    .ace {
         border-bottom: 0.5px solid black;
         width: 100%;
         height: calc(100vh - 7rem);
@@ -220,6 +223,10 @@ section {
             display: none;
         }
     }
+}
+
+.editor {
+    
 }
 
 .mint-params, .owner-params {
