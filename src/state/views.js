@@ -62,8 +62,6 @@ export const loadMarket = () => async ({ getState, update, dispatch }) => {
 	const numSales = await contractAccount.viewFunction(marketId, 'get_supply_by_nft_contract_id', {
 		nft_contract_id: contractId
 	});
-	
-	console.log(numSales)
 
 	const sales = await singleBatchCall({
 		contract: marketId,

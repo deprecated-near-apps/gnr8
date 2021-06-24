@@ -78,13 +78,13 @@ impl Contract {
     pub fn get_package_range(
         &self,
         from_index: U64,
-        limit: U64,
+        limit: u64,
     ) -> Vec<PackageJson> {
 
         let mut tmp = vec![];
         let keys = self.packages_by_name_version.keys_as_vector();
         let start = u64::from(from_index);
-        let end = min(start + u64::from(limit), keys.len());
+        let end = min(start + limit, keys.len());
         for i in start..end {
             let name_version = keys.get(i).unwrap();
             let Package {

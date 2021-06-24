@@ -7,7 +7,7 @@ import { setDialog } from '../state/app';
 import { getParams, IFRAME_ALLOW } from '../state/code';
 
 import { Menu } from './Menu';
-import { Editor } from './Editor';
+import { Editor, examples } from './Editor';
 
 const PENDING_SERIES_UPDATE = '__PENDING_SERIES_UPDATE__';
 
@@ -18,6 +18,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 	const [console, setConsole] = useState(false);
 	const [preview, setPreview] = useState(true);
+	const [example, setExample] = useState(-1);
 	const [sideBy, setSideBy] = useState(true);
 	const [showPackages, setShowPackages] = useState(false);
 	const [showExamples, setShowExamples] = useState(false);
@@ -142,10 +143,10 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	packages.filter(({ name_version }) => name_version.indexOf(packageFilter) > -1)
 		.forEach(({ name_version }, i) => packageMenu['- ' + name_version] = () => includePackage(i));
 
-	// const examplesMenu = {};
-	// examples.forEach(({ series_name, src }) => 
-	// 	examplesMenu['- ' + series_name] = () => onChange(src, true)
-	// );
+	const examplesMenu = {};
+	examples.forEach(({ series_name }, i) => 
+		examplesMenu['- ' + series_name] = () => setExample(i)
+	);
 
 	const options = {
 		[preview ? '▷ Hide Preview' : '▷ Show Preview']: () => {
@@ -200,7 +201,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 
 		<div className={["create", sideBy ? "side-by" : ""].join(' ')}>
 			<div className="editor-wrap">
-				<Editor {...{preview, dispatch}} />
+				<Editor {...{preview, example, dispatch}} />
 			</div>
 			<div className={preview ? 'iframe' : 'iframe display-none'}>
 				<iframe {...{
