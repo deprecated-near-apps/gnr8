@@ -226,7 +226,19 @@ section {
 }
 
 .editor {
-    
+    .tabs {
+        margin-left: 16px;
+        > p {
+            display: inline-block;
+            margin-right: 16px;
+            &.active {
+                text-decoration: underline;
+                > span {
+                    text-decoration: none;
+                }
+            }
+        }
+    }
 }
 
 .mint-params, .owner-params {

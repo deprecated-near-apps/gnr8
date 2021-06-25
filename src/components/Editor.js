@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { get, set, del } from '../utils/storage';
+import { setDialog } from '../state/app';
 import {Ace} from './Ace';
 import { loadCodeFromSrc } from '../state/code';
 
@@ -36,8 +37,11 @@ export const examples = [
 const EDITOR_STATE = '__EDITOR_STATE__';
 const DEBOUNCE_TIME = 750;
 const DEFAULT_STATE = {
+	__tab: 'app.js',
 	'app.js': '// hello world'
 }
+
+const noMeta = (k) => !/__/.test(k)
 
 let changeTimeout, editor;
 
@@ -50,10 +54,7 @@ export const Editor = (props) => {
 
     useEffect(() => {
 		const state = get(EDITOR_STATE, null) || DEFAULT_STATE
-		const keys = Object.keys(state)
-		setState(state)
-        setTab(keys[0])
-		updateEditor(state[keys[0]].code)
+        updateState(state, state.__tab)
     }, [])
 
 	useEffect(() => {
@@ -62,10 +63,16 @@ export const Editor = (props) => {
 		const state = {
 			[ex.series_name]: ex.src
 		}
-        setState(state)
-        setTab(ex.series_name)
-		updateEditor(state[ex.series_name])
+        updateState(state, ex.series_name)
     }, [example])
+
+	const updateState = (newState, newTab) => {
+		setState(newState)
+        setTab(newTab)
+		newState.__tab = newTab
+		set(EDITOR_STATE, newState)
+		updateEditor(Object.values(newState).join('\n\n\n'))
+	}
 
     const updateEditor = (newValue) => {
 		if (!newValue) return;
@@ -88,7 +95,7 @@ export const Editor = (props) => {
 	};
 
 	const onChange = async (newValue, showPreview = false) => {
-		setCode(newValue);
+		updateState({ ...state, [tab]: newValue }, tab)
 		// setPreview(preview || showPreview);
 		if (changeTimeout) {
 			clearTimeout(changeTimeout);
@@ -96,15 +103,72 @@ export const Editor = (props) => {
 		changeTimeout = setTimeout(() => updateEditor(newValue), DEBOUNCE_TIME);
 	};
 
+	const handleNewTab = async () => {
+		const dialog = async (defaultValue) => {
+			const result = await dispatch(setDialog({
+				msg: 'New Tab',
+				input: [
+					{placeholder: 'name', defaultValue},
+				]
+			}));
+			if (!result) return;
+			if (!/\.js|\.html|\.css/.test(result)) {
+				await dispatch(setDialog({
+					msg: 'Please use an extension of either .html, .css or .js' ,
+					info: true,
+					wait: true,
+				}))
+				return dialog(result)
+			}
+			return result
+		}
+		const result = await dialog()
+		
+		const [name] = result;
+		const newState = {
+			...state,
+			[name]: ''
+		}
+		updateState(newState, name)
+	}
+
+	const handleDelTab = async (tab) => {
+		const choice = await dispatch(setDialog({
+			msg: 'Are you sure you want to delete the tab: ' + tab,
+			choices: ['Yes', 'No'],
+			noClose: true,
+		}))
+		if (choice !== 'Yes') return
+		const newState = {
+			...state,
+		}
+		delete newState[tab]
+		// set tab and check if need a new blank tab
+		const tabs = Object.keys(newState).filter(noMeta)
+		tab = tabs[0]
+		if (!tabs.length) {
+			newState['app.js'] = '// hello world!'
+			tab = 'app.js'
+		}
+		updateState(newState, tab)
+	}
+
+	console.log(state, tab)
+	
+	const tabs = Object.keys(state).filter(noMeta)
+
     return <div className="editor">
 
         <div className="tabs">
             {
-                Object.entries(state).map(([k, v]) => {
-
-                    return <p key={k}>{k}</p>
-                })
+                tabs.map((k) => 
+					<p key={k} onClick={() => setTab(k)} className={k === tab ? 'active' : ''}>
+						{k}
+						<span onClick={() => handleDelTab(k)}> ✕</span>
+					</p>
+				)
             }
+			<p onClick={() => handleNewTab()}>new +</p>
         </div>
         
         { tab && 

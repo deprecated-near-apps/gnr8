@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, info = false }) => {
+export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, info = false, wait = false }) => {
     
 	useEffect(() => {
 		if (input) document.querySelector('#dialog-input-0').focus();
@@ -11,7 +11,7 @@ export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, 
 	};
 
 	return (
-		<div className="dialog" onClick={() => reject()}>
+		<div className="dialog" onClick={() => wait ? resolve(false) : reject()}>
 			<div>
 				<div onClick={(e) => {
 					e.stopPropagation();
@@ -20,11 +20,20 @@ export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, 
 					<div>{msg}</div>
 					{
 						input &&
-                        input.map(({ placeholder, type = 'text' }, i) => <div key={i}>
+                        input.map(({ placeholder, list, defaultValue, type = 'text' }, i) => <div key={i}>
                         	<input 
-                        		id={"dialog-input-" + i} type={type} placeholder={placeholder}
+                        		id={'dialog-input-' + i} type={type} placeholder={placeholder}
+								list={list ? 'dialog-list' : undefined}
                         		onKeyUp={(e) => e.key === 'Enter' && resolveInput()}
+								defaultValue={defaultValue}
                         	/>
+							{
+								list && <datalist id="dialog-list">
+									{
+										list.map((v, i) => <option key={i} value={v}></option>)
+									}
+								</datalist>
+							}
                         </div>)
 					}
 					{
@@ -33,8 +42,8 @@ export const Dialog = ({ resolve, reject, msg, choices, input, noClose = false, 
 					}
 					{!info && !choices && <button
 						onClick={resolveInput}
-					>Accept</button>}
-					{!noClose && <button onClick={() => reject()}>Close</button>}
+					>Confirm</button>}
+					{!noClose && <button onClick={() => wait ? resolve(false) : reject()}>Close</button>}
 				</div>
 			</div>
 		</div>

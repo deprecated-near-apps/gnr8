@@ -31,6 +31,7 @@ export const Create = ({ app, views, update, dispatch, account }) => {
 	useEffect(init, []);
 
 	const checkSeriesUpdate = async () => {
+		if (!account) return
 		const { series_name, src, attempts } = get(PENDING_SERIES_UPDATE + account.accountId);
 		if (series_name) {
 			const data = await account.viewFunction(contractId, 'series_data', { series_name }, GAS);
